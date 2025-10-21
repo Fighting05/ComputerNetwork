@@ -3,7 +3,29 @@ using namespace std;
 #include <winsock2.h>
 #include <thread>
 #include <algorithm>
+#include <windows.h>
 #pragma comment(lib, "ws2_32.lib")
+
+
+
+//ai给写的
+string gbkToUtf8(const std::string& gbkStr) {
+    // 1. 将 GBK 字符串转换为宽字符 (UTF-16)
+    int wideCharCount = MultiByteToWideChar(CP_ACP, 0, gbkStr.c_str(), -1, NULL, 0);
+    if (wideCharCount == 0) return {}; 
+
+    std::wstring wideStr(wideCharCount - 1, 0); // -1 是为了去掉 null terminator
+    MultiByteToWideChar(CP_ACP, 0, gbkStr.c_str(), -1, &wideStr[0], wideCharCount);
+
+    // 2. 将宽字符 (UTF-16) 转换为 UTF-8 字符串
+    int utf8ByteCount = WideCharToMultiByte(CP_UTF8, 0, wideStr.c_str(), -1, NULL, 0, NULL, NULL);
+    if (utf8ByteCount == 0) return {}; // 转换失败
+
+    std::string utf8Str(utf8ByteCount - 1, 0); // -1 是为了去掉 null terminator
+    WideCharToMultiByte(CP_UTF8, 0, wideStr.c_str(), -1, &utf8Str[0], utf8ByteCount, NULL, NULL);
+
+    return utf8Str;
+}
 
 //接收服务器回显
 void rcvFromServer(SOCKET clientSocket)
@@ -40,14 +62,22 @@ void sendServer(SOCKET clientSocket)
         }
 
         // 发送消息，加上换行符
-        buffer += "\n";
-        send(clientSocket, buffer.c_str(), buffer.size(), 0);
+        string utf8Buffer = gbkToUtf8(buffer);
+        if (utf8Buffer.empty()) {
+            cerr << "编码转换失败，跳过发送。" << endl;
+            continue; // 跳过此次发送
+        }
+        utf8Buffer += "\n";
+        send(clientSocket, utf8Buffer.c_str(), utf8Buffer.size(), 0);
     }
 }
 
 
 int main()
 {
+
+    SetConsoleOutputCP(CP_UTF8);
+    
     //初始化Winsock
     WSADATA wsaData;
     if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) 
@@ -69,7 +99,8 @@ int main()
     sockaddr_in serverAddr;
     serverAddr.sin_family = AF_INET;
     serverAddr.sin_port = htons(2059);
-    serverAddr.sin_addr.s_addr = inet_addr("127.0.0.1");
+    serverAddr.sin_addr.s_addr = inet_addr("60.205.14.222");//改为我的服务器地址
+
 
     //连接服务器
     if (connect(clientSocket, (sockaddr*)&serverAddr, sizeof(serverAddr)) == SOCKET_ERROR) 

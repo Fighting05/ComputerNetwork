@@ -46,8 +46,21 @@ int main()
     cout<<"你已经成功连接上服务器"<<endl;
     
     string buffer;
+    string rcvBuf;
     while (true) 
     {
+        //接受回显，不过目前的问题就是没接收到回显就不会继续循环发送消息，之后改多线程
+        rcvBuf.resize(1024); 
+        int bytesReceived = recv(clientSocket, &rcvBuf[0], rcvBuf.size(), 0); 
+        if (bytesReceived <= 0) 
+        {
+            cerr << "接收失败或连接关闭" << endl;
+            break;
+        }
+        rcvBuf.resize(bytesReceived); // 调整字符串大小为实际接收字节数
+        cout << "服务器回显示: " << rcvBuf << endl;
+
+        //发送消息
         cout << "请输入你要发送的消息（输入 /quit 退出）: ";
         getline(cin, buffer); 
 
@@ -58,6 +71,8 @@ int main()
         // 发送消息，加上换行符
         buffer += "\n";
         send(clientSocket, buffer.c_str(), buffer.size(), 0);
+         
+        
     }
 
     //关闭socket

@@ -1,7 +1,33 @@
 #include <iostream>
-using namespace std;
 #include <winsock2.h>
+#include <thread>
+#include <vector>
+#include <mutex>
+using namespace std;
 #pragma comment(lib, "ws2_32.lib")
+
+vector<SOCKET> clients; // 保存所有客户端（后续广播用）
+mutex clientsMutex;     // 保护列表（线程安全）
+
+//多线程处理客户端
+void handleClient(SOCKET clientSocket) 
+{
+    char buf[1024];
+    while (true) 
+    {
+        int n = recv(clientSocket, buf, sizeof(buf)-1, 0);
+        if (n <= 0) 
+        {
+            cout << "客户端断开连接" << endl;
+            break;
+        }
+        buf[n] = '\0';
+        cout << "收到客户端消息: " << buf << endl;
+        send(clientSocket, buf, n, 0); // 回显
+    }
+}
+
+
 
 int main()
 {
@@ -43,36 +69,22 @@ int main()
         return 0;
     }  // 开始监听，最多排队 5 个连接
 
-    SOCKET clientSocket = accept(serverSocket, nullptr, nullptr);//阻塞，等待客户端连接
-    if (clientSocket == INVALID_SOCKET) 
-    {
-        cout << "接受连接错误" << endl;
-        closesocket(serverSocket);
-        WSACleanup();
-        return 0;
-    }
-    else
-    {
-        cout << "接受连接成功" << endl;
-    }
-
-    char buf[1024];
-    
     while (true) 
     {
-        int n = recv(clientSocket, buf, sizeof(buf)-1, 0);
-        if (n <= 0) 
+        SOCKET clientSocket = accept(serverSocket, nullptr, nullptr);
+        if (clientSocket == INVALID_SOCKET) 
         {
-            cout << "客户端断开连接" << endl;
-            break;
+            cout << "新客户端接受连接失败\n";
+            continue;
         }
-        buf[n] = '\0';
-        cout << "收到客户端消息: " << buf << endl;
-        send(clientSocket, buf, n, 0); // 回显
+
+        cout << "新客户端连接成功\n";
+
+        // 启动线程处理该客户端
+        thread(handleClient, clientSocket).detach();
     }
 
     // 关闭连接
-    closesocket(clientSocket);
     closesocket(serverSocket);
     WSACleanup();
     return 0;

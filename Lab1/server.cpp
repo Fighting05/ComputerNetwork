@@ -3,6 +3,7 @@
 #include <thread>
 #include <vector>
 #include <mutex>
+#include <algorithm>
 using namespace std;
 #pragma comment(lib, "ws2_32.lib")
 
@@ -19,12 +20,25 @@ void handleClient(SOCKET clientSocket)
         if (n <= 0) 
         {
             cout << "客户端断开连接" << endl;
+            // 从列表中移除客户端
+            {
+                lock_guard<mutex> lock(clientsMutex);
+                clients.erase(remove(clients.begin(), clients.end(), clientSocket), clients.end());
+            }
             break;
         }
         buf[n] = '\0';
         cout << "收到客户端消息: " << buf << endl;
-        send(clientSocket, buf, n, 0); // 回显
+        //广播
+        {
+            lock_guard<mutex> lock(clientsMutex);
+            for (SOCKET s : clients) 
+            {
+                send(s, buf, n, 0);
+            }
+        }
     }
+    
 }
 
 
@@ -80,6 +94,12 @@ int main()
 
         cout << "新客户端连接成功\n";
 
+        // 保存客户端
+        {
+            lock_guard<mutex> lock(clientsMutex); // 上锁
+            clients.push_back(clientSocket);
+        }
+        
         // 启动线程处理该客户端
         thread(handleClient, clientSocket).detach();
     }

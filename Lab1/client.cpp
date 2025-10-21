@@ -1,7 +1,50 @@
 #include <iostream>
 using namespace std;
 #include <winsock2.h>
+#include <thread>
+#include <algorithm>
 #pragma comment(lib, "ws2_32.lib")
+
+//接收服务器回显
+void rcvFromServer(SOCKET clientSocket)
+{
+    while(true)
+    {
+        string rcvBuf(1024, '\0');
+            int bytesReceived = recv(clientSocket, &rcvBuf[0], rcvBuf.size(), 0); 
+            if (bytesReceived <= 0) 
+            {
+                cout << "接收失败或连接关闭" << endl;
+                return;
+            }
+            rcvBuf.resize(bytesReceived); // 调整字符串大小为实际接收字节数
+            cout << rcvBuf << endl; 
+    }
+}
+
+//发送消息
+void sendServer(SOCKET clientSocket)
+{
+    while(true)
+    {
+        string buffer;
+        //发送消息
+        cout << "请输入你要发送的消息（输入 /quit 退出）: "<<endl;
+        getline(cin, buffer); 
+
+        if (buffer == "/quit") 
+        {
+            cout << "你已经退出聊天" << endl;
+            closesocket(clientSocket); // 关闭 socket
+            return;
+        }
+
+        // 发送消息，加上换行符
+        buffer += "\n";
+        send(clientSocket, buffer.c_str(), buffer.size(), 0);
+    }
+}
+
 
 int main()
 {
@@ -40,43 +83,18 @@ int main()
     {
         cout << "连接服务器成功" << endl;
     }
-
-    string msg="hello server";
-    send(clientSocket, msg.c_str(), msg.size(), 0);
     cout<<"你已经成功连接上服务器"<<endl;
     
     string buffer;
-    string rcvBuf;
+
+    thread(rcvFromServer, clientSocket).detach();//接受
+    thread(sendServer, clientSocket).detach();//发送
+
     while (true) 
     {
-        //接受回显，不过目前的问题就是没接收到回显就不会继续循环发送消息，之后改多线程
-        rcvBuf.resize(1024); 
-        int bytesReceived = recv(clientSocket, &rcvBuf[0], rcvBuf.size(), 0); 
-        if (bytesReceived <= 0) 
-        {
-            cerr << "接收失败或连接关闭" << endl;
-            break;
-        }
-        rcvBuf.resize(bytesReceived); // 调整字符串大小为实际接收字节数
-        cout << "服务器回显示: " << rcvBuf << endl;
-
-        //发送消息
-        cout << "请输入你要发送的消息（输入 /quit 退出）: ";
-        getline(cin, buffer); 
-
-        if (buffer == "/quit") {
-            break;
-        }
-
-        // 发送消息，加上换行符
-        buffer += "\n";
-        send(clientSocket, buffer.c_str(), buffer.size(), 0);
-         
-        
+        this_thread::sleep_for(chrono::seconds(1));
     }
 
-    //关闭socket
-    closesocket(clientSocket);
     WSACleanup();
     return 0;
 }

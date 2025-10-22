@@ -4,11 +4,16 @@
 #include <vector>
 #include <mutex>
 #include <algorithm>
+#include <unordered_map>
 using namespace std;
 #pragma comment(lib, "ws2_32.lib")
 
+
 vector<SOCKET> clients; // 保存所有客户端（后续广播用）
+unordered_map<SOCKET, string> clientNames;
+unordered_map<string, SOCKET> nameToSocket;
 mutex clientsMutex;     // 保护列表（线程安全）
+
 
 //多线程处理客户端
 void handleClient(SOCKET clientSocket) 
@@ -23,20 +28,55 @@ void handleClient(SOCKET clientSocket)
             // 从列表中移除客户端
             {
                 lock_guard<mutex> lock(clientsMutex);
+                string name = clientNames[clientSocket];
+                clientNames.erase(clientSocket);
+                nameToSocket.erase(name);
                 clients.erase(remove(clients.begin(), clients.end(), clientSocket), clients.end());
+                string goodbye = "[" + name + "] 离开了聊天室\n";
+                for (SOCKET s : clients) 
+                {
+                    send(s, goodbye.c_str(), goodbye.size(), 0);
+                }
             }
             break;
         }
         buf[n] = '\0';
-        cout << "收到客户端消息: " << buf << endl;
-        //广播
+        cout << "收到客户端消息: " <<"["<< clientNames[clientSocket] << "] " << buf << endl;
+
+        string msg(buf);
+        // 判断是否是私聊
+        if (msg.length() >= 5 && msg.substr(0, 5) == "/msg ") 
         {
-            lock_guard<mutex> lock(clientsMutex);
-            for (SOCKET s : clients) 
+            string nickname = clientNames[clientSocket];
+            size_t firstSpace = msg.find(' ', 5); 
+            if (firstSpace != string::npos) 
             {
-                send(s, buf, n, 0);
+                string target = msg.substr(5, firstSpace - 5);
+                string content = msg.substr(firstSpace + 1);
+                string privateMsg = "[私聊] " + nickname + ": " + content;
+                {
+                    lock_guard<mutex> lock(clientsMutex);
+                    if (nameToSocket.count(target)) {
+                        send(nameToSocket[target], privateMsg.c_str(), privateMsg.size(), 0);
+                    } else {
+                        string err = "用户 [" + target + "] 不在线\n";
+                        send(clientSocket, err.c_str(), err.size(), 0);
+                    }
+                }
             }
         }
+        else
+        {
+            string nickname = clientNames[clientSocket];
+            string broadcastMsg = "[" + nickname + "] " + msg;
+            {
+                lock_guard<mutex> lock(clientsMutex);
+                for (SOCKET s : clients) 
+                {
+                    send(s, broadcastMsg.c_str(), broadcastMsg.size(), 0);
+                }
+            }
+       }
     }
     
 }
@@ -94,11 +134,33 @@ int main()
 
         cout << "新客户端连接成功\n";
 
-        // 保存客户端
+        // 读取昵称
+        char buf[1024];
+        int n = recv(clientSocket, buf, sizeof(buf)-1, 0);
+        if (n <= 0) 
         {
-            lock_guard<mutex> lock(clientsMutex); // 上锁
-            clients.push_back(clientSocket);
+            cout << "客户端未发送昵称就断开" << endl;
+            break;
         }
+        buf[n] = '\0';
+        string nickname(buf);
+        if (!nickname.empty() && nickname.back() == '\n') {
+            nickname.pop_back();
+        }
+
+        // 保存昵称映射
+        {
+            lock_guard<mutex> lock(clientsMutex);
+            clientNames[clientSocket] = nickname;
+            nameToSocket[nickname] = clientSocket;
+            clients.push_back(clientSocket); 
+            string welcome = "[" + nickname + "] 加入了聊天室\n";
+            for (SOCKET s : clients) 
+            {
+                send(s, welcome.c_str(), welcome.size(), 0);
+            }
+        }
+
         
         // 启动线程处理该客户端
         thread(handleClient, clientSocket).detach();

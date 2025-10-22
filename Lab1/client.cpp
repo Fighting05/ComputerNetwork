@@ -57,14 +57,12 @@ void sendServer(SOCKET clientSocket, const string& nickname)
         if (buffer == "/quit") 
         {
             cout << "你已经退出聊天" << endl;
-            string goodbye = gbkToUtf8(nickname + " 离开了聊天室\n");
-            send(clientSocket, goodbye.c_str(), goodbye.size(), 0);
             closesocket(clientSocket); // 关闭 socket
             return;
         }
 
         // 发送消息，加上换行符
-        string utf8Buffer = gbkToUtf8(nickname + ": " + buffer);
+        string utf8Buffer = gbkToUtf8(buffer);
         if (utf8Buffer.empty()) {
             cerr << "编码转换失败，跳过发送。" << endl;
             continue; // 跳过此次发送
@@ -101,7 +99,7 @@ int main()
     sockaddr_in serverAddr;
     serverAddr.sin_family = AF_INET;
     serverAddr.sin_port = htons(2059);
-    serverAddr.sin_addr.s_addr = inet_addr("60.205.14.222");//改为我的服务器地址
+    serverAddr.sin_addr.s_addr = inet_addr("127.0.0.1");//改为我的服务器地址
 
 
     //连接服务器
@@ -121,11 +119,10 @@ int main()
     string nickname;
     getline(cin, nickname); 
 
-    string welcome = gbkToUtf8(nickname + " 加入了聊天室\n");
-    send(clientSocket, welcome.c_str(), welcome.size(), 0);
-    
-    string buffer;
+    //先向服务器发送昵称，保存数据
+    send(clientSocket, (nickname + "\n").c_str(), nickname.size() + 1, 0);
 
+    //之后的都是直接广播
     thread(rcvFromServer, clientSocket).detach();//接受
     thread(sendServer, clientSocket,nickname).detach();//发送
 

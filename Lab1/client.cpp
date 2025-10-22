@@ -45,7 +45,7 @@ void rcvFromServer(SOCKET clientSocket)
 }
 
 //发送消息
-void sendServer(SOCKET clientSocket)
+void sendServer(SOCKET clientSocket, const string& nickname)
 {
     while(true)
     {
@@ -57,12 +57,14 @@ void sendServer(SOCKET clientSocket)
         if (buffer == "/quit") 
         {
             cout << "你已经退出聊天" << endl;
+            string goodbye = gbkToUtf8(nickname + " 离开了聊天室\n");
+            send(clientSocket, goodbye.c_str(), goodbye.size(), 0);
             closesocket(clientSocket); // 关闭 socket
             return;
         }
 
         // 发送消息，加上换行符
-        string utf8Buffer = gbkToUtf8(buffer);
+        string utf8Buffer = gbkToUtf8(nickname + ": " + buffer);
         if (utf8Buffer.empty()) {
             cerr << "编码转换失败，跳过发送。" << endl;
             continue; // 跳过此次发送
@@ -114,12 +116,18 @@ int main()
     {
         cout << "连接服务器成功" << endl;
     }
-    cout<<"你已经成功连接上服务器"<<endl;
+
+    cout << "你已经成功连接上服务器，请输入你的昵称: ";
+    string nickname;
+    getline(cin, nickname); 
+
+    string welcome = gbkToUtf8(nickname + " 加入了聊天室\n");
+    send(clientSocket, welcome.c_str(), welcome.size(), 0);
     
     string buffer;
 
     thread(rcvFromServer, clientSocket).detach();//接受
-    thread(sendServer, clientSocket).detach();//发送
+    thread(sendServer, clientSocket,nickname).detach();//发送
 
     while (true) 
     {
@@ -129,3 +137,5 @@ int main()
     WSACleanup();
     return 0;
 }
+
+// g++ -std=c++11 client.cpp -o client.exe -lws2_32 -static -static-libgcc -static-libstdc++

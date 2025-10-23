@@ -23,45 +23,14 @@ SOCKET g_clientSocket = INVALID_SOCKET;
 bool g_connected = false;
 string g_nickname;
 
-// GBK 转 UTF-8（用于发送到服务器）
-string gbkToUtf8(const std::string& gbkStr) {
-    int wideCharCount = MultiByteToWideChar(CP_ACP, 0, gbkStr.c_str(), -1, NULL, 0);
-    if (wideCharCount == 0) return {}; 
 
-    std::wstring wideStr(wideCharCount - 1, 0);
-    MultiByteToWideChar(CP_ACP, 0, gbkStr.c_str(), -1, &wideStr[0], wideCharCount);
-
-    int utf8ByteCount = WideCharToMultiByte(CP_UTF8, 0, wideStr.c_str(), -1, NULL, 0, NULL, NULL);
-    if (utf8ByteCount == 0) return {};
-
-    std::string utf8Str(utf8ByteCount - 1, 0);
-    WideCharToMultiByte(CP_UTF8, 0, wideStr.c_str(), -1, &utf8Str[0], utf8ByteCount, NULL, NULL);
-
-    return utf8Str;
-}
-
-// UTF-8 转 GBK（用于显示）
-std::string utf8ToGbk(const std::string& utf8Str) {
-    int wideCharCount = MultiByteToWideChar(CP_UTF8, 0, utf8Str.c_str(), -1, NULL, 0);
-    if (wideCharCount == 0) return utf8Str;
-
-    std::wstring wideStr(wideCharCount - 1, 0);
-    MultiByteToWideChar(CP_UTF8, 0, utf8Str.c_str(), -1, &wideStr[0], wideCharCount);
-
-    int gbkByteCount = WideCharToMultiByte(CP_ACP, 0, wideStr.c_str(), -1, NULL, 0, NULL, NULL);
-    if (gbkByteCount == 0) return utf8Str;
-
-    std::string gbkStr(gbkByteCount - 1, 0);
-    WideCharToMultiByte(CP_ACP, 0, wideStr.c_str(), -1, &gbkStr[0], gbkByteCount, NULL, NULL);
-
-    return gbkStr;
-}
 
 // 接收服务器消息线程
+// 替换整个函数
 void rcvFromServer(SOCKET clientSocket) {
     while (true) {
-        string rcvBuf(1024, '\0');
-        int bytesReceived = recv(clientSocket, &rcvBuf[0], rcvBuf.size(), 0);
+        char buf[1024];
+        int bytesReceived = recv(clientSocket, buf, sizeof(buf) - 1, 0);
         
         if (bytesReceived <= 0) {
             {
@@ -72,8 +41,8 @@ void rcvFromServer(SOCKET clientSocket) {
             break;
         }
         
-        rcvBuf.resize(bytesReceived);
-        string displayMsg = utf8ToGbk(rcvBuf);
+        buf[bytesReceived] = '\0';
+        string displayMsg(buf); 
         
         {
             std::lock_guard<std::mutex> lock(g_chatMutex);
@@ -83,25 +52,16 @@ void rcvFromServer(SOCKET clientSocket) {
 }
 
 // 发送消息到服务器
+// 替换整个函数
 bool sendToServer(const string& message) {
-    if (!g_connected || g_clientSocket == INVALID_SOCKET) 
-    {
+    if (!g_connected || g_clientSocket == INVALID_SOCKET) {
         return false;
     }
 
-    string utf8Buffer = gbkToUtf8(message);
-    if (utf8Buffer.empty()) 
-    {
-        g_chatHistory.push_back("[系统] 消息编码转换错误");
-        return false;
-    }
-    
-    utf8Buffer += "\n";
-    int result = send(g_clientSocket, utf8Buffer.c_str(), utf8Buffer.size(), 0);
-    
+    string msg = message + "\n";
+    int result = send(g_clientSocket, msg.c_str(), msg.size(), 0);
     return result != SOCKET_ERROR;
 }
-
 // 连接服务器
 bool connectToServer(const char* ip, int port, const string& nickname) {
     WSADATA wsaData;

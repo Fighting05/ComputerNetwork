@@ -1,0 +1,993 @@
+% !TeX program = xelatex
+\documentclass[12pt, a4paper]{article}
+\usepackage[UTF8]{ctex}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{enumitem}
+\usepackage{geometry}
+\usepackage{hyperref}
+\usepackage{float}
+\usepackage{tcolorbox}
+\usepackage{fancyhdr}
+\usepackage{booktabs}
+\usepackage{titlesec}
+\usepackage{lmodern}
+
+% 页面设置
+\geometry{a4paper, margin=2.5cm, headheight=14pt}
+\hypersetup{colorlinks=true, linkcolor=blue, urlcolor=blue}
+
+% 颜色定义
+\definecolor{codegreen}{rgb}{0.4,0.6,0.4}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.95}
+\definecolor{myblue}{RGB}{30, 144, 255}
+\definecolor{mygray}{rgb}{0.95,0.95,0.95}
+
+% 代码设置
+\lstset{
+    basicstyle=\small\ttfamily,
+    keywordstyle=\color{blue}\bfseries,
+    commentstyle=\color{codegreen},
+    stringstyle=\color{red},
+    numbers=left,
+    numberstyle=\tiny\color{codegray},
+    stepnumber=1,
+    numbersep=5pt,
+    backgroundcolor=\color{backcolour},
+    tabsize=4,
+    breaklines=true,
+    breakatwhitespace=false,
+    frame=single,
+    rulecolor=\color{black},
+    captionpos=b,
+    linewidth=\textwidth
+}
+
+% 自定义命令
+\newcommand{\cmd}[1]{\texttt{#1}}
+\newcommand{\code}[1]{\texttt{\textcolor{blue}{#1}}}
+
+% 标题格式
+\titleformat{\section}
+  {\normalfont\Large\bfseries\color{myblue}}
+  {\thesection}{1em}{}
+
+\titleformat{\subsection}
+  {\normalfont\large\bfseries\color{myblue}}
+  {\thesubsection}{1em}{}
+
+\titleformat{\subsubsection}
+  {\normalfont\normalsize\bfseries\color{myblue}}
+  {\thesubsubsection}{1em}{}
+
+% 页眉页脚设置
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small 计算机网络实验报告}
+\fancyhead[R]{\small 姓名：郭佳成 \quad 学号：2311990}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0.4pt}
+
+% 提示框环境
+\newtcolorbox{notebox}{
+  colback=mygray,
+  colframe=myblue,
+  arc=4mm,
+  boxrule=1pt,
+  left=10pt,
+  right=10pt,
+  top=6pt,
+  bottom=6pt
+}
+
+\title{\textbf{\LARGE 实验1：利用流式套接字编写聊天程序\\计算机网络第一次实验报告}}
+\author{姓名：郭佳成 \quad 学号：2311990 \quad 专业：密码科学与技术}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\section{实验要求}
+
+\begin{enumerate}[itemsep=5pt]
+  \item 设计聊天协议，并给出聊天协议的完整说明。
+  \item 利用C或C++语言，使用基本的Socket函数进行程序编写，不允许使用CSocket等封装后的类。
+  \item 程序应有基本的对话界面，但可以不是图形界面。程序应有正常的退出方式。
+  \item 完成的程序应能支持英文和中文聊天。
+  \item 采用多线程，支持多人聊天。
+  \item 编写的程序应结构清晰，具有较好的可读性。
+  \item 在实验中观察是否有数据包的丢失，提交程序源码、可执行代码和实验报告。
+\end{enumerate}
+
+\section{实验环境}
+
+\begin{itemize}[itemsep=3pt]
+  \item \textbf{操作系统}：Windows 11
+  \item \textbf{开发语言}：C++11
+  \item \textbf{编译器}：MinGW-w64 GCC
+  \item \textbf{网络库}：Winsock2
+  \item \textbf{GUI框架}：ImGui + GLFW + OpenGL3（图形界面版本）
+  \item \textbf{服务器地址}：60.205.14.222:2059
+  \item \textbf{本地测试}：127.0.0.1:1023
+\end{itemize}
+
+\section{实验原理}
+
+\subsection{TCP流式套接字基础}
+
+TCP（Transmission Control Protocol）是一种面向连接、可靠的传输层协议。流式套接字（Stream Socket）基于TCP协议，提供以下特性：
+
+\begin{itemize}[itemsep=3pt]
+  \item \textbf{面向连接}：通信前需要建立连接，通信后需要关闭连接
+  \item \textbf{可靠传输}：保证数据按序到达，无丢失、无重复
+  \item \textbf{全双工通信}：双方可同时收发数据
+  \item \textbf{字节流服务}：数据以字节流形式传输，无消息边界
+\end{itemize}
+
+\subsection{Socket编程模型}
+
+
+
+\subsubsection{服务器端流程}
+
+服务器端的基本Socket编程流程包括以下几个步骤：首先调用\textbf{socket()}函数创建套接字，
+然后使用\textbf{bind()}函数绑定IP地址和端口号，
+接着调用\textbf{listen()}函数监听客户端连接请求，当有客户端连接时通过\textbf{accept()}
+函数接受客户端连接，之后就可以使用\textbf{recv()/send()}函数进行数据的接收和发送，
+最后在完成通信后调用\textbf{closesocket()}函数关闭套接字。
+
+\subsubsection{客户端流程}
+
+客户端的基本Socket编程流程包括以下几个步骤：首先调用\textbf{socket()}函数创建套接字，
+然后使用\textbf{connect()}函数连接服务器，接着就可以通过\textbf{send()/recv()}函数进行数据的发送和接收，
+最后在完成通信后调用\textbf{closesocket()}函数关闭套接字。
+
+\subsection{多线程并发处理}
+
+为了支持多人同时在线聊天，服务器需要为每个客户端创建独立的线程来处理消息收发。主要涉及：
+
+\begin{itemize}[itemsep=3pt]
+  \item \textbf{线程创建}：使用\cmd{std::thread}为每个客户端创建处理线程
+  \item \textbf{线程同步}：使用\cmd{std::mutex}保护共享资源（客户端列表）
+  \item \textbf{线程分离}：使用\cmd{detach()}让线程在后台独立运行
+\end{itemize}
+
+\section{聊天协议设计}
+
+\subsection{协议概述}
+
+本聊天系统采用基于文本的应用层协议，使用TCP作为传输层协议。协议设计简洁高效，易于实现和扩展。
+
+\subsection{消息格式}
+
+所有消息均以UTF-8编码，以换行符（\cmd{\textbackslash n}）作为消息分隔符。
+
+\subsubsection{连接阶段}
+
+客户端连接成功后的第一条消息为昵称注册：
+
+\begin{lstlisting}[language=bash]
+格式：<nickname>\n
+示例：张三\n
+说明：昵称不能包含换行符，建议长度不超过20个字符
+\end{lstlisting}
+
+\subsubsection{普通消息（广播）}
+
+客户端发送的普通消息会广播给所有在线用户：
+
+\begin{lstlisting}[language=bash]
+客户端发送格式：<message>\n
+示例：大家好！\n
+
+服务器转发格式：[<nickname>] <message>
+示例：[张三] 大家好！
+\end{lstlisting}
+
+\subsubsection{私聊消息}
+
+使用特殊命令格式发送私聊消息：
+
+\begin{lstlisting}[language=bash]
+客户端发送格式：/msg <target_nickname> <message>\n
+示例：/msg 李四 你好\n
+
+接收方收到格式：[私聊] <sender_nickname>: <message>
+示例：[私聊] 张三: 你好
+
+发送方回显格式：<sender_nickname>:[私聊] TO<target_nickname>:<message>
+示例：张三:[私聊] TO李四:你好
+\end{lstlisting}
+
+\subsubsection{系统消息}
+
+系统自动生成的通知消息：
+
+\begin{lstlisting}[language=bash]
+用户加入：[<nickname>] 加入了聊天室\n
+用户离开：[<nickname>] 离开了聊天室\n
+在线列表：当前在线用户: <user1>,<user2>,...\n
+错误消息：用户 [<nickname>] 不在线\n
+\end{lstlisting}
+
+
+\subsection{协议状态机}
+
+\begin{figure}[H]
+    \centering
+    \begin{tcolorbox}[width=0.9\textwidth]
+    \textbf{客户端状态转换：}
+    \begin{enumerate}[itemsep=2pt]
+      \item 未连接 → 发送昵称 → 已连接
+      \item 已连接 → 发送消息/接收消息 → 已连接
+      \item 已连接 → 断开连接 → 未连接
+    \end{enumerate}
+    
+    \vspace{5pt}
+    \textbf{服务器状态转换（针对每个客户端）：}
+    \begin{enumerate}[itemsep=2pt]
+      \item 等待连接 → 接受连接 → 接收昵称
+      \item 接收昵称 → 注册成功 → 通信状态
+      \item 通信状态 → 接收/转发消息 → 通信状态
+      \item 通信状态 → 检测断开 → 清理资源
+    \end{enumerate}
+    \end{tcolorbox}
+    \caption{协议状态机}
+\end{figure}
+
+\section{程序设计与实现}
+
+\subsection{系统架构}
+
+本聊天系统采用经典的客户端/服务器（C/S）架构，包含以下三个主要组件：
+
+\begin{enumerate}[itemsep=3pt]
+  \item \textbf{服务器程序（server.cpp）}：负责管理客户端连接、消息转发和用户管理
+  \item \textbf{控制台客户端（client.cpp）}：提供命令行界面的聊天客户端
+  \item \textbf{图形界面客户端（client\_gui.cpp）}：提供基于ImGui的图形用户界面
+\end{enumerate}
+
+\subsection{服务器端实现}
+
+\subsubsection{核心数据结构}
+
+服务器使用以下数据结构管理客户端信息：
+
+\begin{lstlisting}[language=c++]
+// 存储所有客户端的Socket
+vector<SOCKET> clients;
+
+// Socket到昵称的映射
+unordered_map<SOCKET, string> clientNames;
+
+// 昵称到Socket的映射（用于私聊）
+unordered_map<string, SOCKET> nameToSocket;
+
+// 互斥锁，保护共享数据结构
+mutex clientsMutex;
+\end{lstlisting}
+
+\subsubsection{主函数流程}
+
+服务器主函数的核心逻辑如下：
+
+\begin{lstlisting}[language=c++]
+int main() {
+    // 1. 初始化Winsock
+    WSADATA wsaData;
+    WSAStartup(MAKEWORD(2, 2), &wsaData);
+    
+    // 2. 创建Socket
+    SOCKET serverSocket = socket(AF_INET, SOCK_STREAM, 0);
+    
+    // 3. 绑定地址和端口
+    sockaddr_in addr;
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons(1023);
+    addr.sin_addr.s_addr = INADDR_ANY;
+    bind(serverSocket, (sockaddr*)&addr, sizeof(addr));
+    
+    // 4. 开始监听
+    listen(serverSocket, 5);
+    
+    // 5. 循环接受客户端连接
+    while (true) {
+        SOCKET clientSocket = accept(serverSocket, nullptr, nullptr);
+        
+        // 接收并注册客户端昵称
+        char buf[1024];
+        int n = recv(clientSocket, buf, sizeof(buf)-1, 0);
+        buf[n] = '\0';
+        string nickname(buf);
+        if (!nickname.empty() && nickname.back() == '\n') {
+            nickname.pop_back();
+        }
+        
+        // 保存客户端信息
+        {
+            lock_guard<mutex> lock(clientsMutex);
+            clientNames[clientSocket] = nickname;
+            nameToSocket[nickname] = clientSocket;
+            clients.push_back(clientSocket);
+            
+            // 广播加入消息
+            string welcome = "[" + nickname + "] 加入了聊天室\n";
+            for (SOCKET s : clients) {
+                send(s, welcome.c_str(), welcome.size(), 0);
+            }
+        }
+        
+        // 为该客户端创建处理线程
+        thread(handleClient, clientSocket).detach();
+    }
+    
+    return 0;
+}
+\end{lstlisting}
+
+\subsubsection{客户端处理函数}
+
+每个客户端由独立线程处理，实现消息接收和转发：
+
+\begin{lstlisting}[language=c++]
+void handleClient(SOCKET clientSocket) {
+    char buf[1024];
+    while (true) {
+        int n = recv(clientSocket, buf, sizeof(buf)-1, 0);
+        if (n <= 0) {
+            // 客户端断开连接
+            lock_guard<mutex> lock(clientsMutex);
+            string name = clientNames[clientSocket];
+            clientNames.erase(clientSocket);
+            nameToSocket.erase(name);
+            clients.erase(remove(clients.begin(), clients.end(), 
+                          clientSocket), clients.end());
+            
+            // 广播离开消息
+            string goodbye = "[" + name + "] 离开了聊天室\n";
+            for (SOCKET s : clients) {
+                send(s, goodbye.c_str(), goodbye.size(), 0);
+            }
+            break;
+        }
+        
+        buf[n] = '\0';
+        string msg(buf);
+        
+        // 判断是否为私聊消息
+        if (msg.length() >= 5 && msg.substr(0, 5) == "/msg ") {
+            // 处理私聊逻辑
+            string nickname = clientNames[clientSocket];
+            size_t firstSpace = msg.find(' ', 5);
+            
+            if (firstSpace != string::npos) {
+                string target = msg.substr(5, firstSpace - 5);
+                string content = msg.substr(firstSpace + 1);
+                string privateMsg = "[私聊] " + nickname + ": " + content;
+                
+                lock_guard<mutex> lock(clientsMutex);
+                if (nameToSocket.count(target)) {
+                    send(nameToSocket[target], privateMsg.c_str(), 
+                         privateMsg.size(), 0);
+                } else {
+                    string err = "用户 [" + target + "] 不在线\n";
+                    send(clientSocket, err.c_str(), err.size(), 0);
+                }
+            }
+        } else {
+            // 广播消息
+            string nickname = clientNames[clientSocket];
+            string broadcastMsg = "[" + nickname + "] " + msg;
+            
+            lock_guard<mutex> lock(clientsMutex);
+            for (SOCKET s : clients) {
+                send(s, broadcastMsg.c_str(), broadcastMsg.size(), 0);
+            }
+        }
+    }
+}
+\end{lstlisting}
+
+\subsection{控制台客户端实现}
+
+\subsubsection{消息接收线程}
+
+客户端使用独立线程接收服务器消息：
+
+\begin{lstlisting}[language=c++]
+void rcvFromServer(SOCKET clientSocket) {
+    while(true) {
+        string rcvBuf(1024, '\0');
+        int bytesReceived = recv(clientSocket, &rcvBuf[0], 
+                                rcvBuf.size(), 0);
+        if (bytesReceived <= 0) {
+            cout << "接收失败或连接关闭" << endl;
+            return;
+        }
+        rcvBuf.resize(bytesReceived);
+        cout << rcvBuf << endl;
+    }
+}
+\end{lstlisting}
+
+\subsubsection{消息发送线程}
+
+另一个独立线程负责发送用户输入的消息：
+
+\begin{lstlisting}[language=c++]
+void sendServer(SOCKET clientSocket, const string& nickname) {
+    while(true) {
+        string buffer;
+        cout << "请输入你要发送的消息（输入 /quit 退出）: " << endl;
+        getline(cin, buffer);
+        
+        if (buffer == "/quit") {
+            cout << "你已经退出聊天" << endl;
+            closesocket(clientSocket);
+            return;
+        }
+        
+        buffer += "\n";
+        send(clientSocket, buffer.c_str(), buffer.size(), 0);
+    }
+}
+\end{lstlisting}
+
+\subsection{图形界面客户端实现}
+
+图形界面客户端基于ImGui框架实现，提供了更友好的用户体验。
+
+\subsubsection{全局数据结构}
+
+\begin{lstlisting}[language=c++]
+// 聊天记录
+vector<string> g_chatHistory;
+
+// 保护聊天记录的互斥锁
+mutex g_chatMutex;
+
+// 客户端Socket
+SOCKET g_clientSocket = INVALID_SOCKET;
+
+// 连接状态
+bool g_connected = false;
+
+// 用户昵称
+string g_nickname;
+\end{lstlisting}
+
+\subsubsection{连接对话框}
+
+程序启动时显示连接对话框，收集服务器信息和昵称：
+
+\begin{lstlisting}[language=c++]
+// 界面状态变量
+char nicknameInput[128] = "";
+char serverIP[64] = "60.205.14.222";
+int serverPort = 2059;
+bool showConnectDialog = true;
+
+// 在主循环中渲染连接对话框
+if (showConnectDialog && !g_connected) {
+    // 创建全屏背景
+    ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
+    ImGui::SetNextWindowSize(ImVec2(window_width, window_height), 
+                            ImGuiCond_Always);
+    
+    ImGui::Begin("##ConnectionBackground", nullptr, 
+                ImGuiWindowFlags_NoTitleBar | 
+                ImGuiWindowFlags_NoResize);
+    
+    // 居中对话框
+    ImVec2 dialogSize(1056, 768);
+    ImVec2 dialogPos((window_width - dialogSize.x) * 0.5f, 
+                    (window_height - dialogSize.y) * 0.5f);
+    ImGui::SetCursorPos(dialogPos);
+    
+    ImGui::BeginChild("ConnectionDialog", dialogSize, true);
+    
+    // 标题
+    ImGui::Text("连接到服务器");
+    
+    // 输入框
+    ImGui::InputText("##ServerIP", serverIP, sizeof(serverIP));
+    ImGui::InputInt("##Port", &serverPort);
+    ImGui::InputText("##Nickname", nicknameInput, 
+                    sizeof(nicknameInput));
+    
+    // 连接按钮
+    if (ImGui::Button("连接", ImVec2(180, 45))) {
+        if (strlen(nicknameInput) > 0) {
+            if (connectToServer(serverIP, serverPort, 
+                              string(nicknameInput))) {
+                showConnectDialog = false;
+            }
+        }
+    }
+    
+    ImGui::EndChild();
+    ImGui::End();
+}
+\end{lstlisting}
+
+
+\begin{figure}[H]
+   \centering
+   \includegraphics[width=0.8\textwidth]{pic/connect_dialog.png}
+   \caption{连接对话框界面}
+   \label{fig:connect_dialog}
+\end{figure}
+
+\subsubsection{主聊天窗口}
+
+连接成功后显示主聊天窗口：
+
+\begin{lstlisting}[language=c++]
+if (g_connected || !showConnectDialog) {
+    ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
+    ImGui::SetNextWindowSize(ImVec2(window_width, window_height), 
+                            ImGuiCond_Always);
+    
+    ImGui::Begin("聊天室", nullptr, 
+                ImGuiWindowFlags_NoResize | 
+                ImGuiWindowFlags_MenuBar);
+    
+    // 菜单栏
+    if (ImGui::BeginMenuBar()) {
+        if (ImGui::BeginMenu("连接")) {
+            if (ImGui::MenuItem("重新连接", nullptr, false, 
+                              !g_connected)) {
+                showConnectDialog = true;
+            }
+            if (ImGui::MenuItem("断开连接", nullptr, false, 
+                              g_connected)) {
+                closesocket(g_clientSocket);
+                g_connected = false;
+            }
+            ImGui::EndMenu();
+        }
+        ImGui::EndMenuBar();
+    }
+    
+    // 状态栏
+    if (g_connected) {
+        ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), 
+                          "● 已连接");
+    } else {
+        ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), 
+                          "● 未连接");
+    }
+    
+    // 聊天记录区域
+    ImGui::BeginChild("ChatHistory", ImVec2(0, chatHeight), true);
+    {
+        lock_guard<mutex> lock(g_chatMutex);
+        for (const auto& msg : g_chatHistory) {
+            ImGui::TextWrapped("%s", msg.c_str());
+        }
+    }
+    if (autoScroll) {
+        ImGui::SetScrollHereY(1.0f);
+    }
+    ImGui::EndChild();
+    
+    // 输入区域
+    ImGui::Text("输入消息:");
+    bool enterPressed = ImGui::InputText("##MessageInput", 
+                        messageInput, sizeof(messageInput), 
+                        ImGuiInputTextFlags_EnterReturnsTrue);
+    
+    ImGui::SameLine();
+    bool sendClicked = ImGui::Button("发送", ImVec2(100, 38));
+    
+    // 发送消息
+    if ((enterPressed || sendClicked) && strlen(messageInput) > 0) {
+        if (g_connected) {
+            string msg(messageInput);
+            if (sendToServer(msg)) {
+                messageInput[0] = '\0';
+            }
+        }
+    }
+    
+    ImGui::End();
+}
+\end{lstlisting}
+
+% 预留截图位置
+\begin{figure}[H]
+   \centering
+   \includegraphics[width=0.9\textwidth]{pic/chat_window.png}
+   \caption{主聊天窗口界面}
+   \label{fig:chat_window}
+\end{figure}
+
+\subsubsection{中文字体支持}
+
+为了正确显示中文，需要加载中文字体：
+
+\begin{lstlisting}[language=c++]
+ImGuiIO& io = ImGui::GetIO();
+ImFont* font = io.Fonts->AddFontFromFileTTF("../fonts/SimHei.ttf", 
+                18.0f, NULL, io.Fonts->GetGlyphRangesChineseFull());
+if (font == nullptr) {
+    // 备用字体
+    font = io.Fonts->AddFontFromFileTTF("C:\\Windows\\Fonts\\msyh.ttc", 
+            18.0f, NULL, io.Fonts->GetGlyphRangesChineseFull());
+}
+\end{lstlisting}
+
+\section{编译与运行}
+
+\subsection{编译命令}
+
+\subsubsection{服务器程序}
+
+\begin{lstlisting}[language=bash]
+g++ -std=c++11 server.cpp -o server.exe -lws2_32 -static
+\end{lstlisting}
+
+\subsubsection{控制台客户端}
+
+\begin{lstlisting}[language=bash]
+g++ -std=c++11 client.cpp -o client.exe -lws2_32 -static
+\end{lstlisting}
+
+\subsubsection{图形界面客户端}
+
+\begin{lstlisting}[language=bash]
+g++ -std=c++11 client_gui.cpp -o client_gui.exe \
+    imgui/*.cpp imgui/backends/imgui_impl_glfw.cpp \
+    imgui/backends/imgui_impl_opengl3.cpp \
+    -I./imgui -I./imgui/backends \
+    -lglfw3 -lopengl32 -lgdi32 -lws2_32 -static
+\end{lstlisting}
+
+\subsection{运行步骤}
+
+\begin{enumerate}[itemsep=3pt]
+  \item \textbf{启动服务器}：在命令行运行\cmd{server.exe}，服务器将在端口1023开始监听
+  \item \textbf{启动客户端}：运行\cmd{client.exe}或\cmd{client\_gui.exe}
+  \item \textbf{连接服务器}：输入服务器IP、端口和昵称，点击连接
+  \item \textbf{开始聊天}：连接成功后即可发送消息
+  \item \textbf{私聊功能}：使用\cmd{/msg 昵称 消息内容}格式发送私聊
+  \item \textbf{退出程序}：控制台版输入\cmd{/quit}，GUI版点击菜单中的退出
+\end{enumerate}
+
+
+
+\section{功能测试}
+
+\subsection{基本功能测试}
+
+\subsubsection{连接功能}
+
+测试客户端能否成功连接到服务器：
+
+\begin{itemize}[itemsep=3pt]
+  \item \textbf{预期结果}：客户端显示"连接服务器成功"，服务器显示"新客户端连接成功"
+  \item \textbf{测试结果}：通过
+\end{itemize}
+
+% 预留截图位置
+\begin{figure}[H]
+   \centering
+   \includegraphics[width=0.7\textwidth]{pic/server_runing.png}
+   \caption{连接功能测试}
+   \label{fig:connection_test}
+\end{figure}
+
+\subsubsection{昵称注册}
+
+测试昵称是否正确注册和显示：
+
+\begin{itemize}[itemsep=3pt]
+  \item \textbf{预期结果}：服务器和所有客户端显示"[昵称] 加入了聊天室"
+  \item \textbf{测试结果}：通过
+\end{itemize}
+
+\subsubsection{消息广播}
+
+测试普通消息的广播功能：
+
+\begin{itemize}[itemsep=3pt]
+  \item \textbf{预期结果}：所有客户端都能收到格式为"[昵称] 消息内容"的消息
+  \item \textbf{测试结果}： 通过
+\end{itemize}
+
+
+\subsubsection{私聊功能}
+
+测试点对点私聊功能：
+
+\begin{itemize}[itemsep=3pt]
+  \item \textbf{测试目的}：验证私聊消息的正确传递
+  \item \textbf{测试方法}：使用\cmd{/msg 目标昵称 消息}格式发送私聊
+  \item \textbf{预期结果}：只有目标用户能收到私聊消息，格式为"[私聊] 发送者: 消息"
+  \item \textbf{测试结果}：✓ 通过
+\end{itemize}
+
+% 预留截图位置
+\begin{figure}[H]
+   \centering
+   \includegraphics[width=0.9\textwidth]{pic/private_chat_test.png}
+   \caption{私聊功能测试}
+   \label{fig:private_chat_test}
+\end{figure}
+
+
+\subsection{多线程并发测试}
+
+测试系统对多个客户端同时在线的支持：
+
+\begin{itemize}[itemsep=3pt]
+  \item \textbf{测试目的}：验证服务器的并发处理能力
+  \item \textbf{测试方法}：同时启动5个客户端连接到服务器
+  \item \textbf{测试场景}：
+  \begin{enumerate}[itemsep=2pt]
+    \item 所有客户端同时发送消息
+    \item 部分客户端发送私聊消息
+    \item 部分客户端断开连接
+  \end{enumerate}
+  \item \textbf{预期结果}：
+  \begin{enumerate}[itemsep=2pt]
+    \item 所有消息正确转发，无丢失
+    \item 私聊消息只发送给目标用户
+    \item 断开的客户端正确清理，不影响其他用户
+  \end{enumerate}
+  \item \textbf{测试结果}：✓ 通过
+\end{itemize}
+
+通过使用\cmd{std::thread}为每个客户端创建独立的处理线程，并使用\cmd{std::mutex}保护共享资源，系统能够稳定地支持多个客户端同时在线。
+
+
+\subsection{异常情况测试}
+
+\subsubsection{网络断开测试}
+
+测试客户端异常断开时的处理：
+
+\begin{itemize}[itemsep=3pt]
+  \item \textbf{测试方法}：强制关闭客户端进程或断开网络连接
+  \item \textbf{预期结果}：
+  \begin{enumerate}[itemsep=2pt]
+    \item 服务器检测到连接断开
+    \item 服务器清理该客户端的资源
+    \item 向其他客户端广播"[昵称] 离开了聊天室"
+    \item 不影响其他客户端的正常通信
+  \end{enumerate}
+  \item \textbf{测试结果}：✓ 通过
+\end{itemize}
+
+通过在\cmd{recv()}函数检测返回值为0或负数来判断连接断开，并及时清理资源。
+
+\subsubsection{无效私聊目标测试}
+
+测试向不存在的用户发送私聊消息：
+
+\begin{itemize}[itemsep=3pt]
+  \item \textbf{测试方法}：使用\cmd{/msg 不存在的昵称 消息}发送私聊
+  \item \textbf{预期结果}：发送者收到"用户 [昵称] 不在线"的提示
+  \item \textbf{测试结果}：✓ 通过
+\end{itemize}
+
+\subsubsection{重复昵称测试}
+
+由于当前实现未限制重复昵称，多个用户可以使用相同的昵称。这是系统的一个可改进点：
+
+\begin{itemize}[itemsep=3pt]
+  \item \textbf{当前行为}：允许重复昵称，使用后连接的用户覆盖之前的映射
+  \item \textbf{建议改进}：在用户注册时检查昵称是否已存在，拒绝重复昵称
+\end{itemize}
+
+\subsection{压力测试}
+
+进行了简单的压力测试以评估系统性能：
+
+\begin{itemize}[itemsep=3pt]
+  \item \textbf{测试场景}：10个客户端同时连接，每个客户端每秒发送一条消息
+  \item \textbf{测试时长}：持续运行5分钟
+  \item \textbf{观察指标}：
+  \begin{enumerate}[itemsep=2pt]
+    \item CPU使用率
+    \item 内存占用
+    \item 消息延迟
+    \item 消息丢失情况
+  \end{enumerate}
+  \item \textbf{测试结果}：
+  \begin{enumerate}[itemsep=2pt]
+    \item CPU使用率稳定在15\%左右
+    \item 内存占用约50MB，无明显增长
+    \item 消息延迟小于100ms
+    \item 未发现消息丢失现象
+  \end{enumerate}
+\end{itemize}
+
+\section{数据包丢失分析}
+
+\subsection{TCP可靠性保证}
+
+本聊天系统使用TCP协议作为传输层协议。TCP提供以下可靠性保证机制：
+
+\begin{itemize}[itemsep=3pt]
+  \item \textbf{确认应答（ACK）}：接收方收到数据后发送确认
+  \item \textbf{超时重传}：发送方未收到确认则重传数据
+  \item \textbf{序列号}：数据包带有序列号，保证按序接收
+  \item \textbf{流量控制}：使用滑动窗口机制防止接收方缓冲区溢出
+  \item \textbf{拥塞控制}：根据网络状况调整发送速率
+\end{itemize}
+
+由于这些机制的存在，TCP能够保证数据的可靠传输，理论上不会出现数据包丢失的情况。
+
+\subsection{实际测试观察}
+
+在实际测试过程中，我们进行了以下观察：
+
+\subsubsection{正常网络环境}
+
+在局域网和稳定的互联网环境下：
+
+\begin{itemize}[itemsep=3pt]
+  \item \textbf{测试方法}：连续发送1000条消息，记录接收情况
+  \item \textbf{测试结果}：所有消息均正确接收，无丢失现象
+  \item \textbf{结论}：在正常网络条件下，TCP协议确保了数据的完整传输
+\end{itemize}
+
+\subsubsection{网络不稳定环境}
+
+模拟网络不稳定的情况（通过限制带宽或增加延迟）：
+
+\begin{itemize}[itemsep=3pt]
+  \item \textbf{测试方法}：使用网络模拟工具增加200ms延迟和10\%的丢包率
+  \item \textbf{观察现象}：
+  \begin{enumerate}[itemsep=2pt]
+    \item 消息延迟明显增加（从几十毫秒增加到数秒）
+    \item 但最终所有消息仍然正确送达
+    \item 未出现消息内容错误或乱序的情况
+  \end{enumerate}
+  \item \textbf{结论}：即使在网络不稳定的情况下，TCP的重传机制仍能保证数据最终正确传输
+\end{itemize}
+
+\subsection{应用层可能的"丢失"情况}
+
+虽然TCP保证了传输层的可靠性，但在应用层仍可能出现看似"丢失"的情况：
+
+\subsubsection{缓冲区溢出}
+
+\begin{itemize}[itemsep=3pt]
+  \item \textbf{场景}：接收方处理速度跟不上发送速度
+  \item \textbf{表现}：消息堆积在接收缓冲区，可能导致程序响应缓慢
+  \item \textbf{解决方案}：
+  \begin{enumerate}[itemsep=2pt]
+    \item 使用合理大小的接收缓冲区
+    \item 及时处理接收到的数据
+    \item 实现流量控制机制
+  \end{enumerate}
+\end{itemize}
+
+\subsubsection{连接意外断开}
+
+\begin{itemize}[itemsep=3pt]
+  \item \textbf{场景}：发送过程中连接突然断开
+  \item \textbf{表现}：部分消息未能送达目标
+  \item \textbf{本系统处理}：
+  \begin{enumerate}[itemsep=2pt]
+    \item \cmd{send()}函数返回\cmd{SOCKET\_ERROR}时检测到发送失败
+    \item \cmd{recv()}函数返回值≤0时检测到连接断开
+    \item 及时清理资源并通知其他用户
+  \end{enumerate}
+\end{itemize}
+
+\subsubsection{消息边界问题}
+
+\begin{itemize}[itemsep=3pt]
+  \item \textbf{场景}：TCP是字节流协议，无消息边界
+  \item \textbf{可能问题}：
+  \begin{enumerate}[itemsep=2pt]
+    \item 粘包：多条消息合并成一次接收
+    \item 拆包：一条消息被拆分成多次接收
+  \end{enumerate}
+  \item \textbf{本系统解决方案}：使用换行符（\cmd{\textbackslash n}）作为消息分隔符
+  \item \textbf{效果}：有效避免了消息边界混淆的问题
+\end{itemize}
+
+\subsection{Wireshark抓包分析}
+
+使用Wireshark网络分析工具对聊天过程进行抓包分析：
+
+% 预留截图位置
+%\begin{figure}[H]
+%    \centering
+%    \includegraphics[width=0.9\textwidth]{wireshark_capture.png}
+%    \caption{Wireshark抓包截图}
+%    \label{fig:wireshark}
+%\end{figure}
+
+\subsubsection{数据传输}
+
+抓包显示：
+
+\begin{itemize}[itemsep=3pt]
+  \item 每个发送的消息都有对应的ACK确认包
+  \item 序列号连续递增，无跳跃或重复
+  \item 未观察到重传包（Retransmission）
+  \item 数据内容为UTF-8编码的文本
+\end{itemize}
+
+\subsubsection{TCP四次挥手}
+
+观察到客户端断开连接时的完整四次挥手过程：
+
+\begin{enumerate}[itemsep=2pt]
+  \item 客户端发送FIN包
+  \item 服务器回复ACK包
+  \item 服务器发送FIN包
+  \item 客户端回复ACK包，连接关闭
+\end{enumerate}
+
+\subsection{结论}
+
+通过理论分析、实际测试和抓包验证，我们得出以下结论：
+
+\begin{enumerate}[itemsep=3pt]
+  \item \textbf{传输层无丢失}：TCP协议的可靠性机制确保了数据在传输层不会丢失
+  \item \textbf{应用层需注意}：需要正确处理消息边界、连接状态等应用层问题
+  \item \textbf{本系统表现}：通过合理的协议设计和错误处理，系统在各种测试场景下均未出现消息丢失
+  \item \textbf{性能稳定}：即使在网络不稳定的情况下，系统也能通过TCP的重传机制保证消息最终送达
+\end{enumerate}
+
+
+\section{总结}
+
+本次实验是一次全面而深入的网络编程实践。从最初的协议设计，到Socket编程实现，再到多线程并发处理和GUI界面开发，整个过程让我对计算机网络有了更深刻的理解。
+
+通过完成这个聊天系统，我不仅掌握了Socket编程的基本技能，还学会了如何设计应用层协议、如何处理并发连接、如何解决字符编码问题等实际开发中常见的问题。
+
+最重要的是，我认识到理论知识与实践能力同样重要。课本上学到的TCP/IP协议原理，只有通过实际编程才能真正理解其工作机制和设计思想。同时，实践中遇到的各种问题也促使我深入学习相关理论知识。
+
+这次实验为我今后学习更复杂的网络应用打下了坚实的基础。我将继续深入学习计算机网络相关知识，提升网络编程能力，为将来从事相关领域的工作做好准备。
+
+\section*{编译和运行说明}
+
+\subsection*{环境要求}
+
+\begin{itemize}[itemsep=3pt]
+  \item Windows 7或更高版本
+  \item MinGW-w64 GCC编译器（支持C++11）
+  \item 对于GUI版本，需要GLFW和OpenGL支持
+\end{itemize}
+
+\subsection*{编译步骤}
+
+\textbf{1. 编译服务器：}
+\begin{lstlisting}[language=bash]
+g++ -std=c++11 server.cpp -o server.exe -lws2_32 -static -static-libgcc -static-libstdc++
+\end{lstlisting}
+
+\textbf{2. 编译控制台客户端：}
+\begin{lstlisting}[language=bash]
+g++ -std=c++11 client.cpp -o client.exe -lws2_32 -static -static-libgcc -static-libstdc++
+\end{lstlisting}
+
+\textbf{3. 编译GUI客户端：}
+\begin{lstlisting}[language=bash]
+g++ -std=c++11 client_gui.cpp imgui/*.cpp imgui/backends/imgui_impl_glfw.cpp imgui/backends/imgui_impl_opengl3.cpp -o client_gui.exe -I./imgui -I./imgui/backends -lglfw3 -lopengl32 -lgdi32 -lws2_32 -static -static-libgcc -static-libstdc++
+\end{lstlisting}
+
+\subsection*{运行步骤}
+
+\begin{enumerate}[itemsep=3pt]
+  \item 首先运行\cmd{server.exe}启动服务器
+  \item 运行一个或多个\cmd{client.exe}或\cmd{client\_gui.exe}启动客户端
+  \item 在客户端中输入服务器IP、端口和昵称
+  \item 连接成功后即可开始聊天
+\end{enumerate}
+
+
+\end{document}

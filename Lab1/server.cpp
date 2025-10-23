@@ -47,8 +47,11 @@ void handleClient(SOCKET clientSocket)
         // 判断是否是私聊
         if (msg.length() >= 5 && msg.substr(0, 5) == "/msg ") 
         {
+            
             string nickname = clientNames[clientSocket];
             size_t firstSpace = msg.find(' ', 5); 
+            string sendToMyself=nickname+":[私聊] TO"+msg.substr(5, firstSpace - 5)+":"+msg.substr(firstSpace + 1);
+            send(clientSocket, sendToMyself.c_str(), sendToMyself.size(), 0);
             if (firstSpace != string::npos) 
             {
                 string target = msg.substr(5, firstSpace - 5);
@@ -104,7 +107,7 @@ int main()
 
     sockaddr_in addr;
     addr.sin_family = AF_INET;
-    addr.sin_port = htons(2059);          // 端口 2059
+    addr.sin_port = htons(1023);          // 端口 1023
     addr.sin_addr.s_addr = INADDR_ANY;    // 监听所有网卡
     if (bind(serverSocket, (sockaddr*)&addr, sizeof(addr)) == SOCKET_ERROR) 
     {
@@ -113,7 +116,7 @@ int main()
         WSACleanup();
         return 1;
     }
-    cout<<"服务器创建成功,已在端口2059监听"<<endl;
+    cout<<"服务器创建成功,已在端口1023监听"<<endl;
 
     if (listen(serverSocket, 5) == SOCKET_ERROR) 
     {
@@ -155,9 +158,18 @@ int main()
             nameToSocket[nickname] = clientSocket;
             clients.push_back(clientSocket); 
             string welcome = "[" + nickname + "] 加入了聊天室\n";
+            string clientList = "当前在线用户: "+nickname;
+            for (SOCKET s:clients)
+            {
+                if(s!=clientSocket)
+                {
+                    clientList +=","+clientNames[s];
+                }
+            }
             for (SOCKET s : clients) 
             {
                 send(s, welcome.c_str(), welcome.size(), 0);
+                send(s, clientList.c_str(), clientList.size(), 0);
             }
         }
 

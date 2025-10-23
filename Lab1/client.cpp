@@ -98,7 +98,7 @@ int main()
     //设置服务器地址
     sockaddr_in serverAddr;
     serverAddr.sin_family = AF_INET;
-    serverAddr.sin_port = htons(2059);
+    serverAddr.sin_port = htons(1023);
     serverAddr.sin_addr.s_addr = inet_addr("127.0.0.1");//改为我的服务器地址
 
 

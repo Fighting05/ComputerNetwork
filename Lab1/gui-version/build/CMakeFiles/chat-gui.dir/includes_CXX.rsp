@@ -1,0 +1,1 @@
+-I"D:/chat/gui-version/imgui" -I"D:/chat/gui-version/imgui/backends" -isystem "D:/chat/gui-version/glfw/include"

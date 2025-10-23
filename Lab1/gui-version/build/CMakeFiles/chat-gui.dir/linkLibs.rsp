@@ -1,0 +1,1 @@
+ "D:/chat/gui-version/glfw/build/src/libglfw3.a" -lopengl32 -lgdi32 -lws2_32 -limm32 -ldwmapi -lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32 

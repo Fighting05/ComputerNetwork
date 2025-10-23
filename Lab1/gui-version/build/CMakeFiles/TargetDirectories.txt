@@ -1,0 +1,3 @@
+D:/chat/gui-version/build/CMakeFiles/chat-gui.dir
+D:/chat/gui-version/build/CMakeFiles/edit_cache.dir
+D:/chat/gui-version/build/CMakeFiles/rebuild_cache.dir

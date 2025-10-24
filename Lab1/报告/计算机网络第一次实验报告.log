@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 This is XeTeX, Version 3.141592653-2.6-0.999996 (TeX Live 2024) (preloaded format=xelatex 2024.9.8)  24 OCT 2025 22:32
+=======
+This is XeTeX, Version 3.141592653-2.6-0.999996 (TeX Live 2024) (preloaded format=xelatex 2024.9.8)  24 OCT 2025 22:15
+>>>>>>> 049bc2d6397f3cf66c51195a5479643b05587027
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -818,9 +822,13 @@ Package fontspec Info: Font family 'FangSong(0)' created for font 'FangSong'
 (fontspec)             <->"FangSong/OT:script=hani;language=dflt;"
 (fontspec)             - 'small caps'  (m/sc) with NFSS spec.: 
 
+<<<<<<< HEAD
  [1
 
 ] (d:/texlive/2024/texmf-dist/tex/latex/listings/lstlang1.sty
+=======
+ (d:/texlive/2024/texmf-dist/tex/latex/listings/lstlang1.sty
+>>>>>>> 049bc2d6397f3cf66c51195a5479643b05587027
 File: lstlang1.sty 2024/02/21 1.10 listings language file
 ) (d:/texlive/2024/texmf-dist/tex/latex/listings/lstlang1.sty
 File: lstlang1.sty 2024/02/21 1.10 listings language file
@@ -863,11 +871,19 @@ Package rerunfilecheck Info: File `计算机网络第一次实验报告.out' has
 (rerunfilecheck)             Checksum: 6A6D7BFA22B59A80A7D7859D40F9EED7;3744.
  ) 
 Here is how much of TeX's memory you used:
+<<<<<<< HEAD
  28195 strings out of 474773
  603629 string characters out of 5761290
  2189842 words of memory out of 5000000
  49874 multiletter control sequences out of 15000+600000
  571573 words of font info for 87 fonts, out of 8000000 for 9000
+=======
+ 28192 strings out of 474773
+ 603577 string characters out of 5761290
+ 2189842 words of memory out of 5000000
+ 49872 multiletter control sequences out of 15000+600000
+ 571565 words of font info for 86 fonts, out of 8000000 for 9000
+>>>>>>> 049bc2d6397f3cf66c51195a5479643b05587027
  1348 hyphenation exceptions out of 8191
  93i,13n,97p,451b,1920s stack positions out of 10000i,1000n,20000p,200000b,200000s
 

@@ -1,4 +1,4 @@
-This is XeTeX, Version 3.141592653-2.6-0.999996 (TeX Live 2024) (preloaded format=xelatex 2024.9.8)  23 OCT 2025 17:12
+This is XeTeX, Version 3.141592653-2.6-0.999996 (TeX Live 2024) (preloaded format=xelatex 2024.9.8)  24 OCT 2025 22:32
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -795,9 +795,6 @@ LaTeX Font Info:    External font `lmex10' loaded for size
 (Font)              <10> on input line 95.
 LaTeX Font Info:    External font `lmex10' loaded for size
 (Font)              <7> on input line 95.
- [1
-
-]
 
 Package fontspec Info: Could not resolve font "FangSong/BI" (it probably
 (fontspec)             doesn't exist).
@@ -821,56 +818,57 @@ Package fontspec Info: Font family 'FangSong(0)' created for font 'FangSong'
 (fontspec)             <->"FangSong/OT:script=hani;language=dflt;"
 (fontspec)             - 'small caps'  (m/sc) with NFSS spec.: 
 
- [2] (d:/texlive/2024/texmf-dist/tex/latex/listings/lstlang1.sty
+ [1
+
+] (d:/texlive/2024/texmf-dist/tex/latex/listings/lstlang1.sty
 File: lstlang1.sty 2024/02/21 1.10 listings language file
 ) (d:/texlive/2024/texmf-dist/tex/latex/listings/lstlang1.sty
 File: lstlang1.sty 2024/02/21 1.10 listings language file
-) [3] [4] (d:/texlive/2024/texmf-dist/tex/latex/listings/lstlang1.sty
+) [2] [3] (d:/texlive/2024/texmf-dist/tex/latex/listings/lstlang1.sty
 File: lstlang1.sty 2024/02/21 1.10 listings language file
 ) (d:/texlive/2024/texmf-dist/tex/latex/listings/lstlang1.sty
 File: lstlang1.sty 2024/02/21 1.10 listings language file
 ) (d:/texlive/2024/texmf-dist/tex/latex/listings/lstmisc.sty
 File: lstmisc.sty 2024/02/21 1.10 (Carsten Heinz)
-)
+) [4]
 LaTeX Font Info:    Font shape `TU/lmtt/bx/n' in size <10.95> not available
-(Font)              Font shape `TU/lmtt/b/n' tried instead on input line 281.
- [5] [6] [7] [8] [9] [10]
+(Font)              Font shape `TU/lmtt/b/n' tried instead on input line 272.
+ [5] [6] [7] [8] [9]
 File: pic/connect_dialog.png Graphic file (type bmp)
 <pic/connect_dialog.png>
- [11]
+ [10] [11]
 Missing character: There is no ● (U+25CF) in font [lmmono10-regular]:!
 Missing character: There is no ● (U+25CF) in font [lmmono10-regular]:!
 [12]
 File: pic/chat_window.png Graphic file (type bmp)
 <pic/chat_window.png>
- [13] [14]
+ [13]
 File: pic/server_runing.png Graphic file (type bmp)
 <pic/server_runing.png>
- [15]
+ [14]
 Missing character: There is no ✓ (U+2713) in font [lmroman12-regular]:mapping=tex-text;!
 File: pic/private_chat_test.png Graphic file (type bmp)
 <pic/private_chat_test.png>
-[16]
 Missing character: There is no ✓ (U+2713) in font [lmroman12-regular]:mapping=tex-text;!
+[15]
 Missing character: There is no ✓ (U+2713) in font [lmroman12-regular]:mapping=tex-text;!
-Missing character: There is no ✓ (U+2713) in font [lmroman12-regular]:mapping=tex-text;!
-[17] [18] [19]
-Missing character: There is no ≤ (U+2264) in font [lmroman12-regular]:mapping=tex-text;!
-[20] [21] [22] (./计算机网络第一次实验报告.aux)
+File: pic/wireshark_hello.png Graphic file (type bmp)
+<pic/wireshark_hello.png>
+[16] [17] [18] (./计算机网络第一次实验报告.aux)
  ***********
 LaTeX2e <2023-11-01> patch level 1
 L3 programming layer <2022/08/05>
  ***********
 Package rerunfilecheck Info: File `计算机网络第一次实验报告.out' has not changed.
-(rerunfilecheck)             Checksum: 621AEEBA0C9443074674429BA0E0C560;6583.
+(rerunfilecheck)             Checksum: 6A6D7BFA22B59A80A7D7859D40F9EED7;3744.
  ) 
 Here is how much of TeX's memory you used:
- 28132 strings out of 474773
- 598988 string characters out of 5761290
- 2191842 words of memory out of 5000000
- 49813 multiletter control sequences out of 15000+600000
- 571565 words of font info for 86 fonts, out of 8000000 for 9000
+ 28195 strings out of 474773
+ 603629 string characters out of 5761290
+ 2189842 words of memory out of 5000000
+ 49874 multiletter control sequences out of 15000+600000
+ 571573 words of font info for 87 fonts, out of 8000000 for 9000
  1348 hyphenation exceptions out of 8191
- 93i,13n,97p,451b,1829s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ 93i,13n,97p,451b,1920s stack positions out of 10000i,1000n,20000p,200000b,200000s
 
-Output written on 计算机网络第一次实验报告.pdf (22 pages).
+Output written on 计算机网络第一次实验报告.pdf (18 pages).

@@ -86,7 +86,7 @@
 }
 
 \title{\textbf{\LARGE 实验1：利用流式套接字编写聊天程序\\计算机网络第一次实验报告}}
-\author{姓名：郭佳成 \quad 学号：2311990 \quad 专业：密码科学与技术}
+\author{姓名：郭佳成 \quad 学号：2311990 \quad 专业：密码科学与技术 \\ \quad 代码：\url{https://github.com/Fighting05/ComputerNetwork}}
 \date{\today}
 
 \begin{document}
@@ -123,13 +123,6 @@
 
 TCP（Transmission Control Protocol）是一种面向连接、可靠的传输层协议。流式套接字（Stream Socket）基于TCP协议，提供以下特性：
 
-\begin{itemize}[itemsep=3pt]
-  \item \textbf{面向连接}：通信前需要建立连接，通信后需要关闭连接
-  \item \textbf{可靠传输}：保证数据按序到达，无丢失、无重复
-  \item \textbf{全双工通信}：双方可同时收发数据
-  \item \textbf{字节流服务}：数据以字节流形式传输，无消息边界
-\end{itemize}
-
 \subsection{Socket编程模型}
 
 
@@ -160,15 +153,13 @@ TCP（Transmission Control Protocol）是一种面向连接、可靠的传输层
 
 \section{聊天协议设计}
 
-\subsection{协议概述}
+\subsection*{协议概述}
 
 本聊天系统采用基于文本的应用层协议，使用TCP作为传输层协议。协议设计简洁高效，易于实现和扩展。
 
-\subsection{消息格式}
 
-所有消息均以UTF-8编码，以换行符（\cmd{\textbackslash n}）作为消息分隔符。
 
-\subsubsection{连接阶段}
+\subsection*{连接阶段}
 
 客户端连接成功后的第一条消息为昵称注册：
 
@@ -178,7 +169,7 @@ TCP（Transmission Control Protocol）是一种面向连接、可靠的传输层
 说明：昵称不能包含换行符，建议长度不超过20个字符
 \end{lstlisting}
 
-\subsubsection{普通消息（广播）}
+\subsection*{普通消息（广播）}
 
 客户端发送的普通消息会广播给所有在线用户：
 
@@ -190,7 +181,7 @@ TCP（Transmission Control Protocol）是一种面向连接、可靠的传输层
 示例：[张三] 大家好！
 \end{lstlisting}
 
-\subsubsection{私聊消息}
+\subsection*{私聊消息}
 
 使用特殊命令格式发送私聊消息：
 
@@ -205,7 +196,7 @@ TCP（Transmission Control Protocol）是一种面向连接、可靠的传输层
 示例：张三:[私聊] TO李四:你好
 \end{lstlisting}
 
-\subsubsection{系统消息}
+\subsection*{系统消息}
 
 系统自动生成的通知消息：
 
@@ -217,7 +208,7 @@ TCP（Transmission Control Protocol）是一种面向连接、可靠的传输层
 \end{lstlisting}
 
 
-\subsection{协议状态机}
+\subsection*{协议状态机}
 
 \begin{figure}[H]
     \centering
@@ -608,46 +599,8 @@ if (g_connected || !showConnectDialog) {
    \label{fig:chat_window}
 \end{figure}
 
-\subsubsection{中文字体支持}
-
-为了正确显示中文，需要加载中文字体：
-
-\begin{lstlisting}[language=c++]
-ImGuiIO& io = ImGui::GetIO();
-ImFont* font = io.Fonts->AddFontFromFileTTF("../fonts/SimHei.ttf", 
-                18.0f, NULL, io.Fonts->GetGlyphRangesChineseFull());
-if (font == nullptr) {
-    // 备用字体
-    font = io.Fonts->AddFontFromFileTTF("C:\\Windows\\Fonts\\msyh.ttc", 
-            18.0f, NULL, io.Fonts->GetGlyphRangesChineseFull());
-}
-\end{lstlisting}
 
 \section{编译与运行}
-
-\subsection{编译命令}
-
-\subsubsection{服务器程序}
-
-\begin{lstlisting}[language=bash]
-g++ -std=c++11 server.cpp -o server.exe -lws2_32 -static
-\end{lstlisting}
-
-\subsubsection{控制台客户端}
-
-\begin{lstlisting}[language=bash]
-g++ -std=c++11 client.cpp -o client.exe -lws2_32 -static
-\end{lstlisting}
-
-\subsubsection{图形界面客户端}
-
-\begin{lstlisting}[language=bash]
-g++ -std=c++11 client_gui.cpp -o client_gui.exe \
-    imgui/*.cpp imgui/backends/imgui_impl_glfw.cpp \
-    imgui/backends/imgui_impl_opengl3.cpp \
-    -I./imgui -I./imgui/backends \
-    -lglfw3 -lopengl32 -lgdi32 -lws2_32 -static
-\end{lstlisting}
 
 \subsection{运行步骤}
 
@@ -721,32 +674,6 @@ g++ -std=c++11 client_gui.cpp -o client_gui.exe \
    \label{fig:private_chat_test}
 \end{figure}
 
-
-\subsection{多线程并发测试}
-
-测试系统对多个客户端同时在线的支持：
-
-\begin{itemize}[itemsep=3pt]
-  \item \textbf{测试目的}：验证服务器的并发处理能力
-  \item \textbf{测试方法}：同时启动5个客户端连接到服务器
-  \item \textbf{测试场景}：
-  \begin{enumerate}[itemsep=2pt]
-    \item 所有客户端同时发送消息
-    \item 部分客户端发送私聊消息
-    \item 部分客户端断开连接
-  \end{enumerate}
-  \item \textbf{预期结果}：
-  \begin{enumerate}[itemsep=2pt]
-    \item 所有消息正确转发，无丢失
-    \item 私聊消息只发送给目标用户
-    \item 断开的客户端正确清理，不影响其他用户
-  \end{enumerate}
-  \item \textbf{测试结果}：✓ 通过
-\end{itemize}
-
-通过使用\cmd{std::thread}为每个客户端创建独立的处理线程，并使用\cmd{std::mutex}保护共享资源，系统能够稳定地支持多个客户端同时在线。
-
-
 \subsection{异常情况测试}
 
 \subsubsection{网络断开测试}
@@ -786,173 +713,30 @@ g++ -std=c++11 client_gui.cpp -o client_gui.exe \
   \item \textbf{建议改进}：在用户注册时检查昵称是否已存在，拒绝重复昵称
 \end{itemize}
 
-\subsection{压力测试}
-
-进行了简单的压力测试以评估系统性能：
-
-\begin{itemize}[itemsep=3pt]
-  \item \textbf{测试场景}：10个客户端同时连接，每个客户端每秒发送一条消息
-  \item \textbf{测试时长}：持续运行5分钟
-  \item \textbf{观察指标}：
-  \begin{enumerate}[itemsep=2pt]
-    \item CPU使用率
-    \item 内存占用
-    \item 消息延迟
-    \item 消息丢失情况
-  \end{enumerate}
-  \item \textbf{测试结果}：
-  \begin{enumerate}[itemsep=2pt]
-    \item CPU使用率稳定在15\%左右
-    \item 内存占用约50MB，无明显增长
-    \item 消息延迟小于100ms
-    \item 未发现消息丢失现象
-  \end{enumerate}
-\end{itemize}
-
 \section{数据包丢失分析}
 
-\subsection{TCP可靠性保证}
+本实验要求观察程序运行过程中是否存在数据包丢失。由于聊天程序基于 TCP 流式套接字实现，而 TCP 协议本身具有可靠性保障机制（如确认应答、超时重传、顺序控制等），在正常网络环境下理论上不会发生底层数据包丢失。因此，测试的重点在于验证应用程序是否能正确发送和接收完整消息，避免因编码错误、缓冲区处理不当或粘包问题导致应用层“逻辑丢包”。
 
-本聊天系统使用TCP协议作为传输层协议。TCP提供以下可靠性保证机制：
+为直观验证消息传输的完整性，我们使用 Wireshark 在本地回环接口上对通信过程进行抓包分析。测试时，服务器运行于本地 1023 端口，客户端连接至 \texttt{127.0.0.1:1023}。在 Wireshark 中选择 Npcap Loopback Adapter 接口，并设置过滤条件 \texttt{tcp.port == 1023}，以仅捕获聊天程序的通信流量。
 
-\begin{itemize}[itemsep=3pt]
-  \item \textbf{确认应答（ACK）}：接收方收到数据后发送确认
-  \item \textbf{超时重传}：发送方未收到确认则重传数据
-  \item \textbf{序列号}：数据包带有序列号，保证按序接收
-  \item \textbf{流量控制}：使用滑动窗口机制防止接收方缓冲区溢出
-  \item \textbf{拥塞控制}：根据网络状况调整发送速率
-\end{itemize}
+客户端发送英文消息 \texttt{hello} 后，Wireshark 成功捕获到对应的 TCP 数据包，如图~\ref{fig:wireshark_hello} 所示。该数据包源端口为客户端临时端口（如 3032），目的端口为 1023，TCP 标志位为 [PSH, ACK]，表明其携带有效应用层数据。在数据负载部分，十六进制内容显示为 \texttt{68 65 6c 6c 6f 0a}，恰好对应 ASCII 字符串 \texttt{hello}，总长度为 6 字节，与程序发送内容完全一致。同时，服务器与其他客户端均能正常显示该消息，未出现截断、乱码或缺失现象。
 
-由于这些机制的存在，TCP能够保证数据的可靠传输，理论上不会出现数据包丢失的情况。
+\begin{figure}[H]
+   \centering
+   \includegraphics[width=0.95\textwidth]{pic/wireshark_hello.png}
+   \caption{Wireshark 抓包结果：客户端发送 "hello" 消息}
+   \label{fig:wireshark_hello}
+\end{figure}
 
-\subsection{实际测试观察}
+上述结果表明，程序在发送消息时调用 \texttt{send()} 成功，TCP 协议栈完整传输了数据，接收端也能正确解析并输出。在整个测试过程中，未观察到任何数据包丢失或内容损坏的情况。尽管当前接收逻辑未显式处理粘包（依赖单次 \texttt{recv} 读取完整消息），但在低频、短消息场景下仍能正常工作。若未来扩展至高并发或长消息场景，建议引入基于换行符的消息帧解析机制以进一步提升鲁棒性。
 
-在实际测试过程中，我们进行了以下观察：
-
-\subsubsection{正常网络环境}
-
-在局域网和稳定的互联网环境下：
-
-\begin{itemize}[itemsep=3pt]
-  \item \textbf{测试方法}：连续发送1000条消息，记录接收情况
-  \item \textbf{测试结果}：所有消息均正确接收，无丢失现象
-  \item \textbf{结论}：在正常网络条件下，TCP协议确保了数据的完整传输
-\end{itemize}
-
-\subsubsection{网络不稳定环境}
-
-模拟网络不稳定的情况（通过限制带宽或增加延迟）：
-
-\begin{itemize}[itemsep=3pt]
-  \item \textbf{测试方法}：使用网络模拟工具增加200ms延迟和10\%的丢包率
-  \item \textbf{观察现象}：
-  \begin{enumerate}[itemsep=2pt]
-    \item 消息延迟明显增加（从几十毫秒增加到数秒）
-    \item 但最终所有消息仍然正确送达
-    \item 未出现消息内容错误或乱序的情况
-  \end{enumerate}
-  \item \textbf{结论}：即使在网络不稳定的情况下，TCP的重传机制仍能保证数据最终正确传输
-\end{itemize}
-
-\subsection{应用层可能的"丢失"情况}
-
-虽然TCP保证了传输层的可靠性，但在应用层仍可能出现看似"丢失"的情况：
-
-\subsubsection{缓冲区溢出}
-
-\begin{itemize}[itemsep=3pt]
-  \item \textbf{场景}：接收方处理速度跟不上发送速度
-  \item \textbf{表现}：消息堆积在接收缓冲区，可能导致程序响应缓慢
-  \item \textbf{解决方案}：
-  \begin{enumerate}[itemsep=2pt]
-    \item 使用合理大小的接收缓冲区
-    \item 及时处理接收到的数据
-    \item 实现流量控制机制
-  \end{enumerate}
-\end{itemize}
-
-\subsubsection{连接意外断开}
-
-\begin{itemize}[itemsep=3pt]
-  \item \textbf{场景}：发送过程中连接突然断开
-  \item \textbf{表现}：部分消息未能送达目标
-  \item \textbf{本系统处理}：
-  \begin{enumerate}[itemsep=2pt]
-    \item \cmd{send()}函数返回\cmd{SOCKET\_ERROR}时检测到发送失败
-    \item \cmd{recv()}函数返回值≤0时检测到连接断开
-    \item 及时清理资源并通知其他用户
-  \end{enumerate}
-\end{itemize}
-
-\subsubsection{消息边界问题}
-
-\begin{itemize}[itemsep=3pt]
-  \item \textbf{场景}：TCP是字节流协议，无消息边界
-  \item \textbf{可能问题}：
-  \begin{enumerate}[itemsep=2pt]
-    \item 粘包：多条消息合并成一次接收
-    \item 拆包：一条消息被拆分成多次接收
-  \end{enumerate}
-  \item \textbf{本系统解决方案}：使用换行符（\cmd{\textbackslash n}）作为消息分隔符
-  \item \textbf{效果}：有效避免了消息边界混淆的问题
-\end{itemize}
-
-\subsection{Wireshark抓包分析}
-
-使用Wireshark网络分析工具对聊天过程进行抓包分析：
-
-% 预留截图位置
-%\begin{figure}[H]
-%    \centering
-%    \includegraphics[width=0.9\textwidth]{wireshark_capture.png}
-%    \caption{Wireshark抓包截图}
-%    \label{fig:wireshark}
-%\end{figure}
-
-\subsubsection{数据传输}
-
-抓包显示：
-
-\begin{itemize}[itemsep=3pt]
-  \item 每个发送的消息都有对应的ACK确认包
-  \item 序列号连续递增，无跳跃或重复
-  \item 未观察到重传包（Retransmission）
-  \item 数据内容为UTF-8编码的文本
-\end{itemize}
-
-\subsubsection{TCP四次挥手}
-
-观察到客户端断开连接时的完整四次挥手过程：
-
-\begin{enumerate}[itemsep=2pt]
-  \item 客户端发送FIN包
-  \item 服务器回复ACK包
-  \item 服务器发送FIN包
-  \item 客户端回复ACK包，连接关闭
-\end{enumerate}
-
-\subsection{结论}
-
-通过理论分析、实际测试和抓包验证，我们得出以下结论：
-
-\begin{enumerate}[itemsep=3pt]
-  \item \textbf{传输层无丢失}：TCP协议的可靠性机制确保了数据在传输层不会丢失
-  \item \textbf{应用层需注意}：需要正确处理消息边界、连接状态等应用层问题
-  \item \textbf{本系统表现}：通过合理的协议设计和错误处理，系统在各种测试场景下均未出现消息丢失
-  \item \textbf{性能稳定}：即使在网络不稳定的情况下，系统也能通过TCP的重传机制保证消息最终送达
-\end{enumerate}
+综上，通过 Wireshark 抓包验证，本聊天程序在常规使用条件下能够可靠传输消息，满足实验对“观察数据包丢失”的要求。
 
 
 \section{总结}
 
-本次实验是一次全面而深入的网络编程实践。从最初的协议设计，到Socket编程实现，再到多线程并发处理和GUI界面开发，整个过程让我对计算机网络有了更深刻的理解。
-
-通过完成这个聊天系统，我不仅掌握了Socket编程的基本技能，还学会了如何设计应用层协议、如何处理并发连接、如何解决字符编码问题等实际开发中常见的问题。
-
-最重要的是，我认识到理论知识与实践能力同样重要。课本上学到的TCP/IP协议原理，只有通过实际编程才能真正理解其工作机制和设计思想。同时，实践中遇到的各种问题也促使我深入学习相关理论知识。
-
-这次实验为我今后学习更复杂的网络应用打下了坚实的基础。我将继续深入学习计算机网络相关知识，提升网络编程能力，为将来从事相关领域的工作做好准备。
-
+这次实验让我第一次完整地用原始 Socket API 实现了一个多人聊天程序。从服务器监听、客户端连接，到多线程处理消息、支持中英文，每一步都遇到了问题，也都在调试中解决了。
+虽然代码还有改进空间（比如粘包处理、昵称去重），但基本功能都跑通了，也能稳定聊天。整个过程加深了我对 TCP 流式套接字和多线程并发的理解，也让我意识到，写网络程序不能只依赖协议的“可靠性”，应用层的细节同样关键。这次实验收获很大，也为后续更复杂的网络编程打下了基础。
 \section*{编译和运行说明}
 
 \subsection*{环境要求}

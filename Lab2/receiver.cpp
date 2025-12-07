@@ -88,11 +88,14 @@ int main()
     map<int,Packet> recv_buffPacket;
     int expect_seq=ack.seq+1;
     bool isFirstData=true;
+    clock_t last_recv_time = clock();
+
     while(1)
     {
         Packet recvPkt;
         if (recv_packet_show(recvSocket, &recvPkt, &clientAddr, &clientAddrLen)) 
         {
+            last_recv_time = clock();
             if (recvPkt.flags & FLAG_DATA) 
             {
                 if(recvPkt.seq==expect_seq)
@@ -140,7 +143,11 @@ int main()
         }
         else
         {
-
+            if(clock()-last_recv_time>10000)
+            {
+                cout<<"Recevier Time Out!"<<endl;
+                break;
+            }
         }
     }
     

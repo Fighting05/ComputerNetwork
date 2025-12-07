@@ -21,6 +21,7 @@ struct Packet {
     unsigned int seq;        // 发送序号（从 0 开始递增）
     unsigned int ack;        // 确认号（期望收到的下一个 seq）
     unsigned short checksum; // 校验和
+    unsigned short len;      // 数据长度
     unsigned char flags;     // 标志位
     char data[MAX_DATA_SIZE]; // 实际数据
 };

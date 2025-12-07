@@ -48,6 +48,7 @@ void make_data_packet(Packet* pkt, unsigned int seq, const char* payload, int si
     pkt->flags = FLAG_DATA;
     pkt->seq = seq;
     if (size > MAX_DATA_SIZE) size = MAX_DATA_SIZE;
+    pkt->len = size;
     memcpy(pkt->data, payload, size);
 }
 

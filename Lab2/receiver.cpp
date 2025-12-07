@@ -1,4 +1,7 @@
 #include<iostream>
+#include<fstream>
+#include<ostream>
+#include<string>
 #include<winsock2.h>
 #include "protocol.h"
 using namespace std;
@@ -47,7 +50,7 @@ int main()
 
     //接受第一次握手
     while (!recv_packet_show(recvSocket, &syn, &clientAddr, &clientAddrLen)) {
-        // cout << "等待第一次握手 SYN..." << endl; 
+        cout << "等待第一次握手 SYN..." << endl; 
     }
     cout<<"SYN第一次握手接收成功"<<endl;
 
@@ -66,9 +69,52 @@ int main()
     Packet ack;
     memset(&ack, 0, sizeof(ack));
     while (!recv_packet_show(recvSocket, &ack, &clientAddr, &clientAddrLen)) {
-        // 可能超时，或者校验和错误，继续等待
+        // 可能超时，或者校验和错误
     }
     cout<<"ACK第三次握手接收成功"<<endl;
+
+    //准备接受文件
+    cout<<"连接建立成功，准备接受数据..."<<endl;
+    ofstream file("received_file.txt", ios::binary);
+    if (!file.is_open()) 
+    {
+        cout << "文件打开失败！" << endl;
+        closesocket(recvSocket);
+        WSACleanup();
+        return 0;
+    }
+
+    Packet pkt;
+    while(1)
+    {
+        if (recv_packet_show(recvSocket, &pkt, &clientAddr, &clientAddrLen)) 
+        {
+            if (pkt.flags & FLAG_DATA) 
+            {
+                cout << "收到数据包 Seq=" << pkt.seq << " Len=" << pkt.len << endl;
+   
+                // 写入文件
+                file.write(pkt.data, pkt.len);
+   
+                // 回复 ACK
+                Packet ackPkt;
+                // 注意：这里我们回复收到的 seq，告诉 sender "我收到这个了"
+                make_ack_packet(&ackPkt, pkt.seq);
+                send_packet(recvSocket, ackPkt, clientAddr);
+            }
+            else if (pkt.flags & FLAG_FIN)
+            {
+                cout << "收到 FIN 包，准备关闭连接..." << endl;
+                // 回复 ACK
+                Packet ackPkt;
+                make_ack_packet(&ackPkt, pkt.seq+1);
+                send_packet(recvSocket, ackPkt, clientAddr);
+                break;
+            }
+        }
+    }
+    
+    file.close();
 
     system("pause");
     return 0;

@@ -1,16 +1,36 @@
 #include<iostream>
 #include<fstream>
 #include<string>
+#include<vector>
 #include<winsock2.h>
 #include "protocol.h"
 using namespace std;
 
+struct sendPacket
+{
+    Packet pkt;
+    bool acked=false;
+    clock_t sentTime;
+};
+
+
 unsigned int SEND_ISN = 1000;
 
-void send_fin_packet(SOCKET sendSocket, sockaddr_in recvAddr)
+void init_window(vector<sendPacket>& sendWindow, vector<Packet>& all_packets)
+{
+    for(int i=0;i<all_packets.size();i++)
+    {
+        sendWindow[i].pkt=all_packets[i];
+        sendWindow[i].acked=false;
+        sendWindow[i].sentTime=0;
+    }
+}
+
+void send_fin_packet(SOCKET sendSocket, sockaddr_in recvAddr,int next_ack)
 {
     Packet fin;
-    make_fin_packet(&fin, SEND_ISN);
+    make_fin_packet(&fin, ++SEND_ISN);
+    fin.ack=next_ack;
     bool finAck=false;
     int time=0;
     while(!finAck&&time<=5)
@@ -33,6 +53,38 @@ void send_fin_packet(SOCKET sendSocket, sockaddr_in recvAddr)
     }
 }
 
+void get_pkt_from_flie(string filename,vector<Packet>& all_packets,int ack_start)
+{
+     ifstream file(filename,ios::binary|ios::ate);
+    if(!file.is_open())
+    {
+        cout<<"文件打开失败"<<endl;
+        return;
+    }
+    streamsize fileSize=file.tellg();
+    cout<<filename<<"文件打开成功，大小为:"<<fileSize<<"字节"<<endl;
+    //文件指针移回开头
+    file.seekg(0, ios::beg);
+    char buffer[MAX_DATA_SIZE];
+    while(!file.eof())
+    {
+        file.read(buffer, MAX_DATA_SIZE);
+        int realsize=file.gcount();
+        if(realsize<=0)
+        {
+            //读完了
+            file.close();
+            break;
+        }
+        Packet pkt;
+        make_data_packet(&pkt, ++SEND_ISN,ack_start, buffer, realsize);
+        all_packets.push_back(pkt);
+    }
+    file.close();
+    cout<<filename<<"文件分包完成，共分为"<<all_packets.size()<<"个数据包"<<endl;
+
+}
+
 int main() 
 {
     //1.初始化Winsock
@@ -49,7 +101,7 @@ int main()
         cout<<"sendSocket init failed!"<<endl;
         return 0;
     }
-    // 设置接收超时为 3000 毫秒（3秒）
+    // 设置接收超时为3000毫秒（3秒）
     DWORD timeout = 3000;
     setsockopt(sendSocket, SOL_SOCKET, SO_RCVTIMEO, (const char*)&timeout, sizeof(timeout));
 
@@ -87,51 +139,76 @@ int main()
     //第三次握手
     Packet ack;
     memset(&ack, 0, sizeof(ack));
-    ack.seq = 0;
+    ack.seq = syn.seq+1;
     ack.ack=syn_ack.seq+1;
-    SEND_ISN=ack.ack;
+    SEND_ISN=ack.seq;
     ack.flags = FLAG_ACK;
     //发送第三次握手
     send_packet(sendSocket, ack, recvAddr);
     cout<<"ACK第三次握手发送成功"<<endl;
 
+    timeout=1;
+    setsockopt(sendSocket, SOL_SOCKET, SO_RCVTIMEO, (const char*)&timeout, sizeof(timeout));
     //尝试发送一个txt
     string filename="D:\\大三上\\计算机网络\\实验\\Lab2\\lab2测试环境\\测试文件\\helloworld.txt";
-    ifstream file(filename,ios::binary|ios::ate);
-    if(!file.is_open())
+
+
+    vector<Packet> all_packets;
+    get_pkt_from_flie(filename,all_packets,ack.ack);
+    int windowSize=5;
+    int base=0;
+    int next_ack=ack.ack;
+    int next_seq=0;
+    vector<sendPacket> sendWindow(all_packets.size());
+    init_window(sendWindow, all_packets);
+    while(base<all_packets.size())
     {
-        cout<<"文件打开失败"<<endl;
-        return 0;
-    }
-    streamsize fileSize=file.tellg();
-    cout<<filename<<"文件打开成功，大小为:"<<fileSize<<"字节"<<endl;
-
-    //文件指针移回开头
-    file.seekg(0, ios::beg);
-
-    char buffer[MAX_DATA_SIZE];
-    while(!file.eof())
-    {
-        file.read(buffer, MAX_DATA_SIZE);
-        int realsize=file.gcount();
-        if(realsize<=0)
+        //发送窗口内的包
+        while(next_seq<base+windowSize&&next_seq<all_packets.size())
         {
-            //读完了
-            file.close();
-            break;
+            sendWindow[next_seq].pkt.ack=next_ack;
+            send_packet(sendSocket, sendWindow[next_seq].pkt, recvAddr);
+            sendWindow[next_seq].sentTime=clock();
+            next_seq++;
         }
-        Packet pkt;
-        make_data_packet(&pkt, SEND_ISN++, buffer, realsize);
-        cout<<"读取了"<<realsize<<"字节,准备发送"<<endl;
-        send_packet(sendSocket, pkt, recvAddr);
-        while (!recv_packet_show(sendSocket, &ack, &recvAddr, &clientAddrLen)) 
+        //接收ACK
+        Packet ackPkt;
+        memset(&ackPkt, 0, sizeof(ackPkt));
+        if (recv_packet_show(sendSocket, &ackPkt, &recvAddr, &clientAddrLen)) 
         {
-            cout << "接收超时或校验错误，重传..." << endl;
-            send_packet(sendSocket, pkt, recvAddr);
+            if (ackPkt.flags & FLAG_ACK) 
+            {
+                for(int i=base;i<next_seq;i++)
+                {
+                    if(ackPkt.ack==sendWindow[i].pkt.seq+1)
+                    {
+                        sendWindow[i].acked=true;
+                        next_ack++;
+                        break;
+                    }
+                }
+            }
+        }
+        //滑动窗口
+        while(base<next_seq&&sendWindow[base].acked)
+        {
+            base++;
+        }
+        for(int i=base;i<next_seq;i++)
+        {
+            if(!sendWindow[i].acked)
+            {
+                if(clock()-sendWindow[i].sentTime>=1000)
+                {
+                    sendWindow[i].pkt.ack=next_ack;
+                    send_packet(sendSocket, sendWindow[i].pkt, recvAddr);
+                    sendWindow[i].sentTime=clock();
+                }
+            }
         }
     }
 
-    send_fin_packet(sendSocket, recvAddr);
+    send_fin_packet(sendSocket, recvAddr,next_ack);
 
     //关闭链接
     closesocket(sendSocket);

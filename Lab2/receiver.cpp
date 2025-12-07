@@ -2,11 +2,12 @@
 #include<fstream>
 #include<ostream>
 #include<string>
+#include<map>
 #include<winsock2.h>
 #include "protocol.h"
 using namespace std;
 
-unsigned int RECEIVE_ISN = 5000;
+unsigned int RECEIVE_ISN=5000;
 
 int main() 
 {
@@ -84,35 +85,65 @@ int main()
         return 0;
     }
 
-    Packet pkt;
+    map<int,Packet> recv_buffPacket;
+    int expect_seq=ack.seq+1;
+    bool isFirstData=true;
     while(1)
     {
-        if (recv_packet_show(recvSocket, &pkt, &clientAddr, &clientAddrLen)) 
+        Packet recvPkt;
+        if (recv_packet_show(recvSocket, &recvPkt, &clientAddr, &clientAddrLen)) 
         {
-            if (pkt.flags & FLAG_DATA) 
+            if (recvPkt.flags & FLAG_DATA) 
             {
-                cout << "收到数据包 Seq=" << pkt.seq << " Len=" << pkt.len << endl;
-   
-                // 写入文件
-                file.write(pkt.data, pkt.len);
-   
-                // 回复 ACK
-                Packet ackPkt;
-                // 注意：这里我们回复收到的 seq，告诉 sender "我收到这个了"
-                make_ack_packet(&ackPkt, pkt.seq);
-                send_packet(recvSocket, ackPkt, clientAddr);
+                if(recvPkt.seq==expect_seq)
+                {
+                    file.write(recvPkt.data, recvPkt.len);
+                    expect_seq++;
+                    while(recv_buffPacket.count(expect_seq))
+                    {
+                        file.write(recv_buffPacket[expect_seq].data, recv_buffPacket[expect_seq].len);
+                        expect_seq++;
+                        recv_buffPacket.erase(expect_seq-1);
+                    }
+                    Packet ackPkt;
+                    make_ack_packet(&ackPkt, expect_seq);
+                    ackPkt.seq=++RECEIVE_ISN;
+                    send_packet(recvSocket, ackPkt, clientAddr);
+                }
+                else if(recvPkt.seq>expect_seq)
+                {
+                    recv_buffPacket[recvPkt.seq]=recvPkt;
+                    Packet ackPkt;
+                    make_ack_packet(&ackPkt, recvPkt.seq+1);
+                    ackPkt.seq=++RECEIVE_ISN;
+                    send_packet(recvSocket, ackPkt, clientAddr);
+                }
+                else
+                {
+                    Packet ackPkt;
+                    make_ack_packet(&ackPkt, recvPkt.seq+1);
+                    ackPkt.seq=++RECEIVE_ISN;
+                    send_packet(recvSocket, ackPkt, clientAddr);
+                }
             }
-            else if (pkt.flags & FLAG_FIN)
+            else if(recvPkt.flags & FLAG_FIN)
             {
                 cout << "收到 FIN 包，准备关闭连接..." << endl;
                 // 回复 ACK
                 Packet ackPkt;
-                make_ack_packet(&ackPkt, pkt.seq+1);
+                make_ack_packet(&ackPkt, recvPkt.seq+1);
+                ackPkt.seq=++RECEIVE_ISN;
                 send_packet(recvSocket, ackPkt, clientAddr);
                 break;
             }
+                
+        }
+        else
+        {
+
         }
     }
+    
     
     file.close();
 

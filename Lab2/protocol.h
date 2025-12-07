@@ -41,11 +41,11 @@ void make_ack_packet(Packet* pkt, unsigned int ack_seq);
 void make_fin_packet(Packet* pkt, unsigned int seq);
 
 
-void make_data_packet(Packet* pkt, unsigned int seq, const char* payload, int size);
+void make_data_packet(Packet* pkt, unsigned int seq, unsigned int ack, const char* payload, int size);
 
 void show_packet(const Packet* pkt);
 
 void send_packet(const SOCKET& sendSocket, const Packet& pkt, const sockaddr_in& recvAddr);
 
 bool recv_packet_show(const SOCKET& recvSocket, Packet* pkt, sockaddr_in* clientAddr, int* clientAddrLen);
-#endif // PROTOCOL_H
+#endif // PROTOCOL

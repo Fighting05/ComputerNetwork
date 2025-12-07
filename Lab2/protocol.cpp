@@ -15,9 +15,9 @@ void show_packet(const Packet* pkt) {
     cout << "Seq=" << pkt->seq << " Ack=" << pkt->ack << " Checksum=" << pkt->checksum << endl;
     
     // 如果是数据包，打印一部分数据内容
-    if (pkt->flags & FLAG_DATA) {
-        cout << "  Data: " << pkt->data << endl;
-    }
+    // if (pkt->flags & FLAG_DATA) {
+    //     cout << "  Data: " << pkt->data << endl;
+    // }
 }
 
 // 构造 SYN 包
@@ -43,10 +43,11 @@ void make_fin_packet(Packet* pkt, unsigned int seq) {
 }
 
 // 构造 DATA 包
-void make_data_packet(Packet* pkt, unsigned int seq, const char* payload, int size) {
+void make_data_packet(Packet* pkt, unsigned int seq, unsigned int ack,const char* payload, int size) {
     memset(pkt, 0, sizeof(Packet));
     pkt->flags = FLAG_DATA;
     pkt->seq = seq;
+    pkt->ack = ack;
     if (size > MAX_DATA_SIZE) size = MAX_DATA_SIZE;
     pkt->len = size;
     memcpy(pkt->data, payload, size);

@@ -150,7 +150,32 @@ int main()
     timeout=1;
     setsockopt(sendSocket, SOL_SOCKET, SO_RCVTIMEO, (const char*)&timeout, sizeof(timeout));
     //尝试发送一个txt
-    string filename="D:\\大三上\\计算机网络\\实验\\Lab2\\lab2测试环境\\测试文件\\helloworld.txt";
+    string filename1="D:\\大三上\\计算机网络\\实验\\Lab2\\lab2测试环境\\测试文件\\helloworld.txt";
+    string filename2="D:\\大三上\\计算机网络\\实验\\Lab2\\lab2测试环境\\测试文件\\1.jpg";
+    string filename3="D:\\大三上\\计算机网络\\实验\\Lab2\\lab2测试环境\\测试文件\\2.jpg";
+    string filename4="D:\\大三上\\计算机网络\\实验\\Lab2\\lab2测试环境\\测试文件\\3.jpg";
+    cout<<"选择你准备发送的："<<endl<<"1.:"<<filename1<<endl<<"2.:"<<filename2<<endl<<"3.:"<<filename3<<endl<<"4.:"<<filename4<<endl<<"请输入你的选择：";
+    int choice;
+    cin>>choice;
+    string filename;
+    switch(choice)
+    {
+        case 1:
+            filename=filename1;
+            break;
+        case 2:
+            filename=filename2;
+            break;
+        case 3:
+            filename=filename3;
+            break;
+        case 4:
+            filename=filename4;
+            break;
+        default:
+            cout<<"选择错误"<<endl;
+            return 0;
+    }
 
 
     vector<Packet> all_packets;

@@ -75,8 +75,23 @@ int main()
     cout<<"ACK第三次握手接收成功"<<endl;
 
     //准备接受文件
-    cout<<"连接建立成功，准备接受数据..."<<endl;
-    ofstream file("received_file.txt", ios::binary);
+    cout<<"连接建立成功，准备接受数据..."<<endl<<"1:txt 2.jpg"<<"请输入：";
+    int file_choice;
+    cin>>file_choice;
+    string filename;
+    switch(file_choice)
+    {
+        case 1:
+            filename="received_file.txt";
+            break;
+        case 2:
+            filename="received_file.jpg";
+            break;
+        default:
+            cout<<"选择错误"<<endl;
+            return 0;
+    }
+    ofstream file(filename, ios::binary);
     if (!file.is_open()) 
     {
         cout << "文件打开失败！" << endl;

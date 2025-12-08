@@ -8,7 +8,7 @@
 #pragma pack(1)  // 关闭字节对齐，确保结构体大小固定（网络传输必需！）
 
 
-#define MAX_DATA_SIZE 1000
+#define MAX_DATA_SIZE 10000
 
 // 标志位定义
 #define FLAG_SYN  1   // 建立连接

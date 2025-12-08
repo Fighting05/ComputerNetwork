@@ -108,7 +108,12 @@ int main()
     // 目标地址 (Receiver 的地址)
     sockaddr_in recvAddr;
     recvAddr.sin_family = AF_INET;
-    recvAddr.sin_port = htons(1234); // 目标端口
+    
+    int targetPort;
+    cout << "请输入目标端口 (直连输1234, 路由输8888): ";
+    cin >> targetPort;
+    recvAddr.sin_port = htons(targetPort); // 目标端口
+    
     recvAddr.sin_addr.s_addr = inet_addr("127.0.0.1"); // 目标IP
 
     cout<<"UDP Socket 创建成功，准备发送数据..."<<endl;
@@ -180,7 +185,7 @@ int main()
 
     vector<Packet> all_packets;
     get_pkt_from_flie(filename,all_packets,ack.ack);
-    int windowSize=5;
+    int windowSize=20;
     int base=0;
     int next_ack=ack.ack;
     int next_seq=0;
@@ -223,7 +228,7 @@ int main()
         {
             if(!sendWindow[i].acked)
             {
-                if(clock()-sendWindow[i].sentTime>=1000)
+                if(clock()-sendWindow[i].sentTime>=100)
                 {
                     sendWindow[i].pkt.ack=next_ack;
                     send_packet(sendSocket, sendWindow[i].pkt, recvAddr);

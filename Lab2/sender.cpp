@@ -15,6 +15,7 @@ struct sendPacket
 
 
 unsigned int SEND_ISN = 1000;
+streamsize FileSize=0;
 
 void init_window(vector<sendPacket>& sendWindow, vector<Packet>& all_packets)
 {
@@ -62,6 +63,7 @@ void get_pkt_from_flie(string filename,vector<Packet>& all_packets,int ack_start
         return;
     }
     streamsize fileSize=file.tellg();
+    FileSize=fileSize;
     cout<<filename<<"文件打开成功，大小为:"<<fileSize<<"字节"<<endl;
     //文件指针移回开头
     file.seekg(0, ios::beg);
@@ -191,6 +193,7 @@ int main()
     int next_seq=0;
     vector<sendPacket> sendWindow(all_packets.size());
     init_window(sendWindow, all_packets);
+    clock_t strat_time=clock();
     while(base<all_packets.size())
     {
         //发送窗口内的包
@@ -239,6 +242,14 @@ int main()
     }
 
     send_fin_packet(sendSocket, recvAddr,next_ack);
+    clock_t end_time=clock();
+    double tot_time=(double)(end_time-strat_time)/CLOCKS_PER_SEC;
+    cout<<"===================================="<<endl;
+    cout<<"发送文件："<<filename<<"，文件大小："<<FileSize<<"字节"<<endl;
+    cout<<"总传输时间："<<tot_time<<"秒"<<endl;
+    double throughout=FileSize/(tot_time*1024.0);
+    cout<<"吞吐量："<<throughout<<"KB/秒"<<endl;
+     cout<<"===================================="<<endl;
 
     //关闭链接
     closesocket(sendSocket);

@@ -111,10 +111,7 @@ int main()
     sockaddr_in recvAddr;
     recvAddr.sin_family = AF_INET;
     
-    int targetPort;
-    cout << "请输入目标端口 (直连输1234, 路由输8888): ";
-    cin >> targetPort;
-    recvAddr.sin_port = htons(targetPort); // 目标端口
+    recvAddr.sin_port = htons(1234); // 目标端口
     
     recvAddr.sin_addr.s_addr = inet_addr("127.0.0.1"); // 目标IP
 
@@ -187,7 +184,7 @@ int main()
 
     vector<Packet> all_packets;
     get_pkt_from_flie(filename,all_packets,ack.ack);
-    int windowSize=20;
+    int windowSize=10;
     int base=0;
     int next_ack=ack.ack;
     int next_seq=0;
@@ -207,8 +204,13 @@ int main()
         //接收ACK
         Packet ackPkt;
         memset(&ackPkt, 0, sizeof(ackPkt));
-        if (recv_packet_show(sendSocket, &ackPkt, &recvAddr, &clientAddrLen)) 
+        int ack_limit=10;
+        while (recv_packet_show(sendSocket, &ackPkt, &recvAddr, &clientAddrLen)) 
         {
+            if(ack_limit--<=0)
+            {
+                break;
+            }
             if (ackPkt.flags & FLAG_ACK) 
             {
                 for(int i=base;i<next_seq;i++)

@@ -185,6 +185,10 @@ int main()
     vector<Packet> all_packets;
     get_pkt_from_flie(filename,all_packets,ack.ack);
     int windowSize=10;
+    //reno
+    double cwnd = 1.0;           // 拥塞窗口
+    double ssthresh = 16.0;      // 慢启动阈值
+    int dupAckCount = 0;
     int base=0;
     int next_ack=ack.ack;
     int next_seq=0;
@@ -194,7 +198,7 @@ int main()
     while(base<all_packets.size())
     {
         //发送窗口内的包
-        while(next_seq<base+windowSize&&next_seq<all_packets.size())
+        while(next_seq<base+(int)cwnd&&next_seq<all_packets.size())
         {
             sendWindow[next_seq].pkt.ack=next_ack;
             send_packet(sendSocket, sendWindow[next_seq].pkt, recvAddr);
@@ -204,7 +208,7 @@ int main()
         //接收ACK
         Packet ackPkt;
         memset(&ackPkt, 0, sizeof(ackPkt));
-        int ack_limit=10;
+        int ack_limit=16;
         while (recv_packet_show(sendSocket, &ackPkt, &recvAddr, &clientAddrLen)) 
         {
             if(ack_limit--<=0)
@@ -215,31 +219,63 @@ int main()
             {
                 for(int i=base;i<next_seq;i++)
                 {
-                    if(ackPkt.ack==sendWindow[i].pkt.seq+1)
+                    if(ackPkt.ack==sendWindow[i].pkt.seq+1&&!sendWindow[i].acked)
                     {
                         sendWindow[i].acked=true;
+                        if(cwnd<ssthresh)
+                        {
+                            cwnd+=1.0;
+                        }
+                        else
+                        {
+                            cwnd+=1.0/cwnd;
+                        }
+                        if(i>base&&!sendWindow[base].acked)
+                        {
+                            dupAckCount++;
+                            if (dupAckCount == 3) 
+                            {
+                                cout << "[Reno] 快重传 Base Seq=" << sendWindow[base].pkt.seq << endl;
+                                send_packet(sendSocket, sendWindow[base].pkt, recvAddr);
+                                sendWindow[base].sentTime = clock(); // 重置计时
+                                
+                                ssthresh = max(2.0, cwnd / 2.0);
+                                cwnd = ssthresh + 3;
+                                dupAckCount = 0;
+                            }
+                            else if(dupAckCount>3)
+                            {
+                                cwnd+=1.0;
+                            }
+                        }
                         next_ack++;
                         break;
                     }
                 }
             }
         }
+        
+        
+        if(!sendWindow[base].acked)
+        {
+            if(clock()-sendWindow[base].sentTime>=100)
+            {
+                cout << "[Reno/Timeout] 超时！Seq=" << sendWindow[base].pkt.seq << " cwnd重置为1" << endl;
+                
+                ssthresh = max(2.0, cwnd / 2.0);
+                cwnd = 1.0;
+                dupAckCount = 0;
+                sendWindow[base].pkt.ack=next_ack;
+                send_packet(sendSocket, sendWindow[base].pkt, recvAddr);
+                sendWindow[base].sentTime=clock();
+            }
+        }
+        
         //滑动窗口
         while(base<next_seq&&sendWindow[base].acked)
         {
             base++;
-        }
-        for(int i=base;i<next_seq;i++)
-        {
-            if(!sendWindow[i].acked)
-            {
-                if(clock()-sendWindow[i].sentTime>=100)
-                {
-                    sendWindow[i].pkt.ack=next_ack;
-                    send_packet(sendSocket, sendWindow[i].pkt, recvAddr);
-                    sendWindow[i].sentTime=clock();
-                }
-            }
+            dupAckCount=0;
         }
     }
 

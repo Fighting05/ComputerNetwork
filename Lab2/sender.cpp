@@ -184,7 +184,7 @@ int main()
 
     vector<Packet> all_packets;
     get_pkt_from_flie(filename,all_packets,ack.ack);
-    int windowSize=10;
+    int windowSize=32;
     //reno
     double cwnd = 1.0;           // 拥塞窗口
     double ssthresh = 16.0;      // 慢启动阈值
@@ -197,6 +197,7 @@ int main()
     clock_t strat_time=clock();
     while(base<all_packets.size())
     {
+        int curr_size=min((int)cwnd,windowSize);
         //发送窗口内的包
         while(next_seq<base+(int)cwnd&&next_seq<all_packets.size())
         {
